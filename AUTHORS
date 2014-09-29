@@ -1,0 +1,8 @@
+Marcus Kinsella <marcus.kinsella@gmail.com>
+
+The suffix tree implementation, with some minor modifications,
+was written by Dotan Tsadok and Shlomo Yoda. 
+<shlomo@cs.haifa.ac.il>
+
+The test and debugging macros, dbg.h and minunit.h, were
+written by Zed Shaw.
