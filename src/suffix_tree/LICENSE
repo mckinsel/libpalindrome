@@ -9,4 +9,4 @@ under the same terms as Perl itself.
 
 suffix_tree.h and suffix_tree.c have been modified. The original versions,
 downloaded from http://mila.cs.technion.ac.il/~yona/suffix_tree/, are 
-suffix_tree.orig.hx and suffix_tree.orig.cx
+suffix_tree.orig.h and suffix_tree.orig.cx
