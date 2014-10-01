@@ -1,4 +1,7 @@
-CFLAGS=-g -O3 -Wall -Wextra -Isrc -rdynamic -DNDEBUG $(OPTFLAGS)
+CFLAGS=-g -O3 -Wall -Wextra -Isrc -DNDEBUG $(OPTFLAGS)
+ifneq "$(CC)" "clang"
+	CFLAGS += -rdynamic
+endif
 LIBS= $(OPTLIBS)
 PREFIX?=/usr/local
 
@@ -12,7 +15,7 @@ TARGET=build/libpalindrome.a
 SO_TARGET=$(patsubst %.a,%.so,$(TARGET))
 
 # The Target Build
-all: $(TARGET) $(SO_TARGET) tests
+all: $(TARGET) $(SO_TARGET)
 
 dev: CFLAGS=-g2 -pg -Wall -Isrc -Wall -Wextra $(OPTFLAGS)
 dev: all
@@ -29,13 +32,13 @@ build:
 		@mkdir -p build
 #		@mkdir -p bin
 
-.PHONY: tests
-tests: LDLIBS += $(SO_TARGET)
-tests: $(TESTS)
+.PHONY: test
+test: LDLIBS += $(SO_TARGET)
+test: $(TESTS)
 		sh ./tests/runtests.sh
 
 valgrind:
-	VALGRIND="valgrind --leak-check=full --log-file=tests/valgrind-%p.log" $(MAKE)
+	VALGRIND="valgrind --leak-check=full --log-file=tests/valgrind-%p.log" $(MAKE) test
 
 clean:
 		rm -rf build bin $(OBJECTS) $(TESTS)
