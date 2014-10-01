@@ -250,9 +250,11 @@ error:
 size_t* annotate_substr_classes(size_t str_len, size_t substr_len,
                                 const SUFFIX_TREE* stree)
 {
-  size_t* substr_classes = calloc(1, str_len * sizeof(size_t));
+  size_t* substr_classes  = NULL;
+  size_t* class_label = NULL;
+  substr_classes = calloc(1, str_len * sizeof(size_t));
   check_mem(substr_classes);
-  size_t* class_label = calloc(1, sizeof(size_t));
+  class_label = calloc(1, sizeof(size_t));
   check_mem(class_label);
   
   /* Iterate through each child of the root, passing the child to the recursive
