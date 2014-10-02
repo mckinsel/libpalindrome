@@ -954,6 +954,10 @@ SUFFIX_TREE* ST_CreateTree(const char* str, DBL_WORD length)
       /* Perform Single Phase Algorithm */
       SPA(tree, &pos, phase, &extension, &repeated_extension);
    }
+
+   DBL_WORD counter = 0;
+   label_nodes(tree->root, &counter);
+   tree->num_nodes = counter;
    return tree;
 
 error:
@@ -961,6 +965,18 @@ error:
    if(tree->root) free(tree->root);
    if(tree) free(tree);
    return NULL;
+}
+
+/* Assign an index label to each node */
+void label_nodes(NODE* node, DBL_WORD* label)
+{
+  node->index = *label;
+  (*label)++;
+  NODE* next_node = node->sons;
+  while(next_node != 0) {
+    label_nodes(next_node, label);
+    next_node = next_node->right_sibling;
+  }
 }
 
 /******************************************************************************/
@@ -1046,7 +1062,7 @@ void ST_PrintNode(SUFFIX_TREE* tree, NODE* node1, long depth)
          start++;
       }
 
-      printf("\t%p", node1);
+      printf("\t%zu\t%p", node1->index, node1);
       #ifdef DEBUG
          printf("  \t\t\t(%zu,%zu | %zu)",node1->edge_label_start,end,node1->path_position);
       #endif
@@ -1107,6 +1123,8 @@ void ST_PrintTree(SUFFIX_TREE* tree)
 {
    printf("\nroot\n");
    ST_PrintNode(tree, tree->root, 0);
+   printf("\nSuffix tree of string of length %zd with %zd nodes.\n",
+          tree->length, tree->num_nodes);
 }
 
 /******************************************************************************/

@@ -51,8 +51,8 @@ typedef struct SUFFIXTREENODE
    DBL_WORD                 edge_label_start;
    /* End index of the incoming edge */
    DBL_WORD                 edge_label_end;
-   /* An id for the node */
-   DBL_WORD                 id;
+   /* An index for the node */
+   DBL_WORD                 index;
 } NODE;
 
 /* This structure describes a suffix tree */
@@ -66,6 +66,8 @@ typedef struct SUFFIXTREE
    char*           tree_string;
    /* The length of the source string */
    DBL_WORD                 length;
+   /* The number of nodes in the tree */
+   DBL_WORD                 num_nodes;
    /* The node that is the head of all others. It has no siblings nor a
       father */
    NODE*                    root;
@@ -161,4 +163,5 @@ DBL_WORD ST_SelfTest(const SUFFIX_TREE* tree);
 
 DBL_WORD get_node_label_end(const SUFFIX_TREE* tree, const NODE* node);
 
+void label_nodes(NODE* node, DBL_WORD* label);
 #endif
