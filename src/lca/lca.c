@@ -11,8 +11,8 @@
 void count_nodes(const NODE* node, DBL_WORD* counter)
 {
   NODE* next_node = node->sons;
+  (*counter)++;
   while(next_node != 0) {
-    (*counter)++;
     count_nodes(next_node, counter);
     next_node = next_node->right_sibling;
   }

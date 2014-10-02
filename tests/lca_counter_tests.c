@@ -15,7 +15,7 @@ char* test_mississippi()
   DBL_WORD counter = 0;
   count_nodes(stree->root, &counter);
   
-  mu_assert(counter == 18, "Invalid node count.");
+  mu_assert(counter == 19, "Invalid node count.");
   
   ST_DeleteTree(stree);
 
@@ -34,7 +34,7 @@ char* test_banana()
   DBL_WORD counter = 0;
   count_nodes(stree->root, &counter);
   
-  mu_assert(counter == 10, "Invalid node count.");
+  mu_assert(counter == 11, "Invalid node count.");
 
   ST_DeleteTree(stree);
 
