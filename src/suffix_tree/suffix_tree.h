@@ -161,7 +161,15 @@ void ST_DeleteTree(SUFFIX_TREE* tree);
 
 DBL_WORD ST_SelfTest(const SUFFIX_TREE* tree);
 
+/*
+ * Get the end position in the string of a node's incoming edge.
+ */
 DBL_WORD get_node_label_end(const SUFFIX_TREE* tree, const NODE* node);
 
+/*
+ * Set the index member for a node and all the nodes in its subtree. The index
+ * starts with label and increments as it visits each node in a depth-first
+ * search.
+ */
 void label_nodes(NODE* node, DBL_WORD* label);
 #endif
