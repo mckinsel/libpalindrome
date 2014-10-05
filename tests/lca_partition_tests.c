@@ -2,6 +2,9 @@
 #include "test_utils.h"
 #include "lca/lca.h"
 
+/*
+ * Run tests for the partitioning of an array of size n.
+ */
 int verify_partition(size_t n)
 {
   size_t* block_counts = calloc(get_num_partitions(n), sizeof(size_t));
