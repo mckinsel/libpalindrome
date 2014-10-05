@@ -1,3 +1,22 @@
+/*
+ * This is an implentation of constant-time lowest common ancestor queries for
+ * nodes in a suffix tree, as defined in ../suffix_tree/suffix_tree.h
+ *
+ * There method used is described in "The LCA Problem Revisited" by Michael A.
+ * Bender and Martin Fararch-Colton.
+ *
+ * There are three main steps:
+ *    1. Create an array on which we will perform range minimum queries. This
+ *    array is the depths of nodes visited in an Euler tour of the tree.
+ *    2. Partition that array into blocks, and compute minima between blocks
+ *    using the Sparse Table algorithm. This creates and retains a table of size
+ *    nlogn.
+ *    3. Precompute all possible within-block queries. This creates and stores
+ *    tables of total size sqrt(n)log^2n.
+ */
+
+
+#include <math.h>
 #include <stdlib.h>
 
 #include "dbg.h"
@@ -5,17 +24,71 @@
 
 #include "lca.h"
 
-/*
- * Count the number of nodes in the subtree of node.
- */
-void count_nodes(const NODE* node, DBL_WORD* counter)
+void prepare_rmq_arrays(const SUFFIX_TREE* stree, DBL_WORD** depths,
+                        DBL_WORD** first_instances)
+{
+  /* The length of the Euler tour */
+  DBL_WORD array_size = 2 * stree->num_nodes - 1;
+
+  *depths = calloc(array_size, sizeof(DBL_WORD));
+  *first_instances = calloc(stree->num_nodes, sizeof(DBL_WORD));
+  
+  DBL_WORD* pos_in_tour = calloc(1, sizeof(DBL_WORD));
+  euler_tour(stree->root, 0, pos_in_tour, *depths, *first_instances);
+
+  free(pos_in_tour);
+}
+
+void euler_tour(NODE* node, DBL_WORD depth, DBL_WORD* pos_in_tour,
+                DBL_WORD* depths, DBL_WORD* first_instances)
 {
   NODE* next_node = node->sons;
-  (*counter)++;
-  while(next_node != 0) {
-    count_nodes(next_node, counter);
-    next_node = next_node->right_sibling;
+  
+  depths[*pos_in_tour] = depth;
+  if(first_instances[node->index] == 0) {
+    first_instances[node->index] = *pos_in_tour;
   }
+  (*pos_in_tour)++;
+    
+  if(next_node != 0) {
+    while(next_node != 0) {
+      euler_tour(next_node, depth + 1, pos_in_tour,
+                 depths, first_instances); 
+      depths[*pos_in_tour] = depth;
+      (*pos_in_tour)++;
+      next_node = next_node->right_sibling;
+    }
+    
+  }
+
+}
+
+int verify_rmq_arrays(const SUFFIX_TREE* stree, const DBL_WORD* depths,
+                      const DBL_WORD* first_instances)
+{
+  /* First verify that the depths array has the +-1 property */
+  size_t i = 0;
+  for(i = 0; i < 2 * stree->num_nodes - 2; i++) { /* Note - 2 not - 1 */
+    long int diff = depths[i] - depths[i + 1];
+    
+    if(!labs(diff) == 1) {
+      log_warn("Consecutive values in depth array do not differ by 1.");
+      return 1;
+    }
+  }
+
+  /* Verify that first instances is strictly increasing. This doesn't
+   * necessarily have to be true, but since we assign labels in the order that
+   * we visit nodes in the same depth-first traversal, it should be true for
+   * us. */
+  for(i = 0; i < stree->num_nodes - 1; i++) {
+    if(first_instances[i+1] <= first_instances[i]){
+      log_warn("First instances is not increasing.");
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 /*
@@ -129,4 +202,5 @@ int verify_map_position_to_leaf(NODE** pos_to_leaf,
   }
   return 0;
 }
+
 
