@@ -2,7 +2,7 @@ CFLAGS=-g -O3 -Wall -Wextra -Isrc -DNDEBUG $(OPTFLAGS)
 ifneq "$(CC)" "clang"
 	CFLAGS += -rdynamic
 endif
-LIBS= $(OPTLIBS)
+LIBS= -lm $(OPTLIBS)
 PREFIX?=/usr/local
 
 SOURCES=$(wildcard src/**/*.c src/*.c)
@@ -26,7 +26,7 @@ $(TARGET): build $(OBJECTS)
 		ranlib $@
 
 $(SO_TARGET): $(TARGET) $(OBJECTS)
-		$(CC) -shared -o $@ $(OBJECTS)
+		$(CC) -shared -o $@ $(OBJECTS) $(LIBS)
 
 build:
 		@mkdir -p build
