@@ -71,28 +71,28 @@ char* test_verification()
 
 char* test_random_strings()
 {
-    const size_t str_len = 500000;
-    char* str = malloc(str_len * sizeof(char));
-    unsigned int i = 0;
+  const size_t str_len = 500000;
+  char* str = malloc(str_len * sizeof(char));
+  unsigned int i = 0;
 
-    printf("Some palindromes:\n");
+  printf("Some palindromes:\n");
 
-    for(i = 0; i < 25; i++) {
-        random_string(str, str_len);
-        size_t* radii = manacher(str, str_len);
-        int rc = verify_palindrome_radii(str, str_len, radii);
-        mu_assert(rc == 0, "Failed test of random string.");
+  for(i = 0; i < 25; i++) {
+    random_string(str, str_len);
+    size_t* radii = manacher(str, str_len);
+    int rc = verify_palindrome_radii(str, str_len, radii);
+    mu_assert(rc == 0, "Failed test of random string.");
 
-        char* longest = longest_palindrome(str, str_len, radii);
-        printf("%s\n", longest);
+    char* longest = longest_palindrome(str, str_len, radii);
+    printf("%s\n", longest);
 
-        free(longest);
-        free(radii);
-    }
-    printf("\n");
-    free(str);
+    free(longest);
+    free(radii);
+  }
+  printf("\n");
+  free(str);
 
-    return NULL;
+  return NULL;
 }
     
 char* all_tests()
