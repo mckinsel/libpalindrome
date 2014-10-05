@@ -24,6 +24,23 @@
 
 #include "lca.h"
 
+/*
+ * Create the depth and first instance arrays that are used in the
+ * constant-time lowest common ancestor algorithm. The depths array is the
+ * depth of each node visited in an Euler tour of the suffix tree. The first
+ * instances array gives the index in the depths array of the first instance of
+ * a node. Depth and first instance arrays correspond to the L and R array
+ * described in the paper above.
+ *
+ * Inputs:
+ *  SUFFIX_TREE* stree        :   Suffix tree on which we want to perform LCA
+ *  DBL_WORD** depths         :   Depth array
+ *  DBL_WORD** first_intances :   First instance array
+ * 
+ * Outputs:
+ *  None, but depths and first_instances are allocated, and the caller is
+ *  responsible for freeing.
+ */
 void prepare_rmq_arrays(const SUFFIX_TREE* stree, DBL_WORD** depths,
                         DBL_WORD** first_instances)
 {
@@ -39,6 +56,20 @@ void prepare_rmq_arrays(const SUFFIX_TREE* stree, DBL_WORD** depths,
   free(pos_in_tour);
 }
 
+/*
+ * Complete an Euler tour starting at a node. Record node depths and the first
+ * instances of nodes during the tour. This is called by prepare_rmq_arrays,
+ * starting with the root of the suffix tree.
+ *
+ * Inputs:
+ *  NODE* node                :     Starting node
+ *  DBL_WORD* pos_in_tour     :   Number of nodes visited in the tour so far
+ *  DBL_WORD* depths          :   Depths array
+ *  DBL_WORD* first_instances :   First instances array
+ *
+ * Outputs:
+ *  None, but populates depths and first_instances.
+ */
 void euler_tour(NODE* node, DBL_WORD depth, DBL_WORD* pos_in_tour,
                 DBL_WORD* depths, DBL_WORD* first_instances)
 {
@@ -63,6 +94,9 @@ void euler_tour(NODE* node, DBL_WORD depth, DBL_WORD* pos_in_tour,
 
 }
 
+/*
+ * Test the depth and first_instance arrays. Return 0 if tests pass, else 1.
+ */
 int verify_rmq_arrays(const SUFFIX_TREE* stree, const DBL_WORD* depths,
                       const DBL_WORD* first_instances)
 {
@@ -90,6 +124,76 @@ int verify_rmq_arrays(const SUFFIX_TREE* stree, const DBL_WORD* depths,
 
   return 0;
 }
+
+/*
+ * Functions for partitioning the depth array. Per the LCA algorithm, it needs
+ * to be partitioned into blocks of size log(n)/2.
+ *
+ * get_parition returns block index for a given position and a given total
+ * array size.
+ *
+ * get_partition_size returns the size of all but possibly the final block of
+ * the array. The last block is the remained so can be irregularly sized.
+ *
+ * get_num_partition returns the number of blocks.
+ */
+size_t get_partition(size_t pos, size_t n)
+{
+  return pos / get_partition_size(n);
+}
+size_t get_partition_size(size_t n)
+{
+  return (size_t)ceil(log2(n)/2);
+}
+size_t get_num_partitions(size_t n)
+{
+  return (size_t)ceil((double)n/get_partition_size(n));
+}
+
+/*
+ * Calculate the minimum over each block in the depth array. Keep track of both
+ * the value of the minimum and its position in the block.
+ */
+void get_partition_minima(const size_t* depths, size_t depths_size,
+                          size_t** block_minima, size_t** minima_positions)
+{
+  *block_minima = calloc(get_num_partitions(depths_size), sizeof(size_t));
+  *minima_positions = calloc(get_num_partitions(depths_size), sizeof(size_t));
+  
+  size_t current_block = 0;
+  size_t pos_in_current_block = 0;
+  size_t minimum_pos_in_current_block = (size_t)-1;
+  size_t current_minimum = (size_t)-1; 
+  size_t block = 0;
+
+  size_t i = 0;
+  for(i = 0; i < depths_size; i++) {
+
+    block = get_partition(i, depths_size);
+    /* First check and see if this is a new block. If so, record the minimum
+     * and position of the last block and reset those values. */
+    if(block != current_block) {
+      (*block_minima)[current_block] = current_minimum;
+      (*minima_positions)[current_block] = minimum_pos_in_current_block;
+      current_minimum = (size_t)-1;
+      minimum_pos_in_current_block = (size_t)-1;
+      pos_in_current_block = 0;
+      current_block = block;
+    }
+
+    /* Then see if the depths array value at this position is lower than the
+     * current minimum for this block. */
+    if(depths[i] < current_minimum) {
+      current_minimum = depths[i];
+      minimum_pos_in_current_block = pos_in_current_block;
+    }
+    pos_in_current_block++;
+  }
+  (*block_minima)[block] = current_minimum;
+  (*minima_positions)[block] = minimum_pos_in_current_block;
+
+}
+                      
 
 /*
  * Create an array that maps position in a string to a leaf of a suffix tree.
