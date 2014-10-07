@@ -9,12 +9,19 @@ char* test_array()
   size_t arr_len = 10;
   
   SparseTable* sparse_table = SparseTable_create(arr, arr_len);
-
-  size_t val = SparseTable_lookup(sparse_table, arr, 5, 7);
+  
+  size_t val = 0;
+  val = SparseTable_lookup(sparse_table, arr, 5, 7);
   mu_assert(val == 6, "Didn't work.");
+
+  val = SparseTable_lookup(sparse_table, arr, 7, 5);
+  mu_assert(val == 6, "Didn't work.");
+
   val = SparseTable_lookup(sparse_table, arr, 5, 8);
   mu_assert(val == 6, "Didn't work.");
 
+  val = SparseTable_lookup(sparse_table, arr, 8, 5);
+  mu_assert(val == 6, "Didn't work.");
 
   int ret = SparseTable_verify(sparse_table, arr, arr_len); 
   mu_assert(ret == 0, "SparseTable verification failed.");

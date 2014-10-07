@@ -148,8 +148,8 @@ int SparseTable_verify(const SparseTable* sparse_table, const size_t* array,
   size_t i = 0;
   size_t j = 0;
 
-  for(i = 0; i < array_size; i++) {
-    for(j = 0; j < array_size; j++) {
+  for(i = 0; i <= array_size; i++) {
+    for(j = 0; j <= array_size; j++) {
       /* i == j won't work */
       if(i == j) continue;
       
