@@ -17,11 +17,17 @@ int BRT_verify(const BlockRMQTable* block_rmq_table, const size_t* block);
 
 /* Struct and functions for looking up and creating BlockRMQTables */
 typedef struct {
+  size_t            block_size;
   unsigned int      num_blocks;
   BlockRMQTable**   block_tables;
   int*              is_initialized;
 } BlockRMQDatabase;
 
+BlockRMQDatabase* BRD_create(size_t block_size);
+size_t BRD_lookup(const BlockRMQDatabase* block_rmq_db, const size_t* block,
+                  size_t block_size, size_t i, size_t j);
+void BRD_delete(BlockRMQDatabase* block_rmq_db);
+int BRD_verify(const BlockRMQDatabase* block_rmq_db);
 
 unsigned int get_block_id(const size_t* block, size_t block_size);
 
