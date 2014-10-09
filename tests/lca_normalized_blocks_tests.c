@@ -106,6 +106,64 @@ char* test_brt_lookup_random()
   return NULL;
 
 }
+
+/* Test lookups in the BlockRMQDatabase agains some simple expected values. */
+char* test_brd_lookup()
+{ 
+                    /* 0   1   2   3   4 */
+  size_t block1[5] = { 5,  6,  7,  6,  7};
+  size_t block2[5] = {19, 18, 17, 16, 15};
+  size_t block3[5] = { 9,  8,  7,  6,  5};
+  size_t block4[5] = {22, 23, 24, 25, 26};
+  size_t block5[5] = {32, 33, 34, 35, 36};
+  size_t block_size = sizeof(block1)/sizeof(size_t); 
+
+  BlockRMQDatabase* block_rmq_db = BRD_create(block_size);
+  size_t ret = 0;
+  
+  ret = BRD_lookup(block_rmq_db, block1, block_size, 0, 5);
+  mu_assert(ret == 0, "Failed BRD_lookup. Expected %d, got %zu", 0, ret);
+  ret = BRD_lookup(block_rmq_db, block1, block_size, 1, 4);
+  mu_assert(ret == 1, "Failed BRD_lookup. Expected %d, got %zu", 1, ret);
+  
+  ret = BRD_lookup(block_rmq_db, block2, block_size, 0, 5);
+  mu_assert(ret == 4, "Failed BRD_lookup. Expected %d, got %zu", 4, ret);
+  ret = BRD_lookup(block_rmq_db, block2, block_size, 1, 4);
+  mu_assert(ret == 3, "Failed BRD_lookup. Expected %d, got %zu", 3, ret);
+
+  ret = BRD_lookup(block_rmq_db, block3, block_size, 0, 5);
+  mu_assert(ret == 4, "Failed BRD_lookup. Expected %d, got %zu", 4, ret);
+  ret = BRD_lookup(block_rmq_db, block3, block_size, 1, 4);
+  mu_assert(ret == 3, "Failed BRD_lookup. Expected %d, got %zu", 3, ret);
+
+  ret = BRD_lookup(block_rmq_db, block4, block_size, 0, 5);
+  mu_assert(ret == 0, "Failed BRD_lookup. Expected %d, got %zu", 0, ret);
+  ret = BRD_lookup(block_rmq_db, block4, block_size, 1, 4);
+  mu_assert(ret == 1, "Failed BRD_lookup. Expected %d, got %zu", 1, ret);
+  
+  ret = BRD_lookup(block_rmq_db, block5, block_size, 0, 5);
+  mu_assert(ret == 0, "Failed BRD_lookup. Expected %d, got %zu", 0, ret);
+  ret = BRD_lookup(block_rmq_db, block5, block_size, 1, 4);
+  mu_assert(ret == 1, "Failed BRD_lookup. Expected %d, got %zu", 1, ret);
+
+  BRD_delete(block_rmq_db);
+  return NULL;
+}
+
+/* Verify the BlockRMQDatabase for a range of block sizes. */
+char*  test_brd_lookup_range()
+{
+
+  int block_size = 0;
+  for(block_size = 1; block_size < 8; block_size++) {
+    BlockRMQDatabase* block_rmq_db = BRD_create(block_size);
+    BRD_verify(block_rmq_db);
+    BRD_delete(block_rmq_db);
+  }
+
+  return NULL;
+}
+
 char* all_tests()
 {
   mu_suite_start();
@@ -113,6 +171,10 @@ char* all_tests()
   mu_run_test(test_block_ids);
   mu_run_test(test_brt_lookup);
   mu_run_test(test_brt_lookup_random);
+
+  mu_run_test(test_brd_lookup);
+  mu_run_test(test_brd_lookup_range);
+
   return NULL;
 }
 
