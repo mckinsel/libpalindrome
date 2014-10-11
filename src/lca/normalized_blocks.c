@@ -192,6 +192,9 @@ BlockRMQDatabase* BRD_create(size_t block_size)
   block_rmq_db->block_tables = calloc(block_rmq_db->num_blocks, sizeof(BlockRMQTable*));
   check_mem(block_rmq_db->block_tables);
   
+  block_rmq_db->remainder_block_table = calloc(1, sizeof(BlockRMQTable));
+  block_rmq_db->remainder_block_id  = 0;
+  block_rmq_db->remainder_is_initialized = 0; 
   return block_rmq_db;
 
 error:
@@ -212,15 +215,34 @@ error:
  * Output:
  *  size_t, position of minimum element in [i:j] in block.
  */
-size_t BRD_lookup(const BlockRMQDatabase* block_rmq_db, const size_t* block,
+size_t BRD_lookup(BlockRMQDatabase* block_rmq_db, const size_t* block,
                   size_t block_size, size_t i, size_t j)
 {
-  check(block_size == block_rmq_db->block_size,
-        "Block size %zu is different than the DB block size %zu.",
+  check(block_size <= block_rmq_db->block_size,
+        "Block size %zu is greater than the DB block size %zu.",
         block_size,  block_rmq_db->block_size);
 
   unsigned int block_id = get_block_id(block, block_size);
   
+  if(block_size < block_rmq_db->block_size) {
+    /* We may be dealing with the remainder block. If we haven't see the
+     * remainder yet, then just initialize it.*/
+    if(!block_rmq_db->remainder_is_initialized) {
+
+      check(!block_rmq_db->remainder_block_table,
+            "Attempting to initialize remainder block table twice.");
+      block_rmq_db->remainder_block_table = BRT_create(block, block_size);
+      block_rmq_db->remainder_is_initialized = 1;
+      block_rmq_db->remainder_block_id = get_block_id(block, block_size);
+    }
+
+    /* If we have seen the remainder, we need to make sure that this block is
+     * the same. The remainder block is always the same block. */
+    check(get_block_id(block, block_size) == block_rmq_db->remainder_block_id,
+          "Remainder block with different id than the first.");
+    return BRT_lookup(block_rmq_db->remainder_block_table, i, j);
+  }
+
   /* Create the block table if it doesn't exist yet. */
   if(!block_rmq_db->is_initialized[block_id]) {
     check(!block_rmq_db->block_tables[block_id],
@@ -264,7 +286,7 @@ void BRD_delete(BlockRMQDatabase* block_rmq_db)
 }
       
 /* Test BlockRMQDatabase lookups in a given DB. */
-int BRD_verify(const BlockRMQDatabase* block_rmq_db)
+int BRD_verify(BlockRMQDatabase* block_rmq_db)
 {
 
   unsigned int i = 0;
