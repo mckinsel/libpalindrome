@@ -281,6 +281,7 @@ void BRD_delete(BlockRMQDatabase* block_rmq_db)
       }
       free(block_rmq_db->is_initialized);
     }
+    if(block_rmq_db->remainder_block_table) BRT_delete(block_rmq_db->remainder_block_table);
     free(block_rmq_db);
   }
 }
