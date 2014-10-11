@@ -15,185 +15,143 @@
  *    tables of total size sqrt(n)log^2n.
  */
 
-
 #include <math.h>
 #include <stdlib.h>
 
 #include "dbg.h"
-#include "suffix_tree/suffix_tree.h"
 
 #include "lca.h"
 
-/*
- * Create the depth and first instance arrays that are used in the
- * constant-time lowest common ancestor algorithm. The depths array is the
- * depth of each node visited in an Euler tour of the suffix tree. The first
- * instances array gives the index in the depths array of the first instance of
- * a node. Depth and first instance arrays correspond to the L and R array
- * described in the paper above.
- *
- * Inputs:
- *  SUFFIX_TREE* stree        :   Suffix tree on which we want to perform LCA
- *  DBL_WORD** depths         :   Depth array
- *  DBL_WORD** first_intances :   First instance array
- * 
- * Outputs:
- *  None, but depths and first_instances are allocated, and the caller is
- *  responsible for freeing.
- */
-void prepare_rmq_arrays(const SUFFIX_TREE* stree, DBL_WORD** depths,
-                        DBL_WORD** first_instances)
-{
-  /* The length of the Euler tour */
-  DBL_WORD array_size = 2 * stree->num_nodes - 1;
+#define MAX(a,b) ((a) > (b) ? a : b)
+#define MIN(a,b) ((a) < (b) ? a : b)
 
-  *depths = calloc(array_size, sizeof(DBL_WORD));
-  *first_instances = calloc(stree->num_nodes, sizeof(DBL_WORD));
+TreeLCA* TreeLCA_create(const SUFFIX_TREE* stree)
+{
+  TreeLCA* tree_lca = malloc(sizeof(TreeLCA));
+  check_mem(tree_lca);
   
-  DBL_WORD* pos_in_tour = calloc(1, sizeof(DBL_WORD));
-  euler_tour(stree->root, 0, pos_in_tour, *depths, *first_instances);
+  /* First create the Euler tour */
+  euler_tour_arrays_create(stree, &tree_lca->euler_tour_nodes,
+                           &tree_lca->euler_tour_depths,
+                           &tree_lca->node_id_pos_in_tour);
+  check(tree_lca->euler_tour_depths,
+        "Failed initialization of Euler tour depths.");
+  check(tree_lca->node_id_pos_in_tour,
+        "Failed initializtion of Euler tour first instances.")
+  tree_lca->euler_tour_length = 2 * stree->num_nodes - 1;
 
-  free(pos_in_tour);
-}
+  /* Then create the arrays for block minima. */
+  tree_lca->num_blocks = get_block_minima(
+      tree_lca->euler_tour_depths, tree_lca->euler_tour_length,
+      &tree_lca->block_minima, &tree_lca->minima_positions);
+  check(tree_lca->block_minima, "Failed block minimum array creation.");
+  check(tree_lca->minima_positions, "Failed minimum position array creation.");
 
-/*
- * Complete an Euler tour starting at a node. Record node depths and the first
- * instances of nodes during the tour. This is called by prepare_rmq_arrays,
- * starting with the root of the suffix tree.
- *
- * Inputs:
- *  NODE* node                :     Starting node
- *  DBL_WORD* pos_in_tour     :   Number of nodes visited in the tour so far
- *  DBL_WORD* depths          :   Depths array
- *  DBL_WORD* first_instances :   First instances array
- *
- * Outputs:
- *  None, but populates depths and first_instances.
- */
-void euler_tour(NODE* node, DBL_WORD depth, DBL_WORD* pos_in_tour,
-                DBL_WORD* depths, DBL_WORD* first_instances)
-{
-  NODE* next_node = node->sons;
+  /* Then create the sparse table for finding minima between blocks. */
+  tree_lca->block_sparse_table = SparseTable_create(tree_lca->block_minima,
+                                                    tree_lca->num_blocks);
   
-  depths[*pos_in_tour] = depth;
-  if(first_instances[node->index] == 0) {
-    first_instances[node->index] = *pos_in_tour;
-  }
-  (*pos_in_tour)++;
-    
-  if(next_node != 0) {
-    while(next_node != 0) {
-      euler_tour(next_node, depth + 1, pos_in_tour,
-                 depths, first_instances); 
-      depths[*pos_in_tour] = depth;
-      (*pos_in_tour)++;
-      next_node = next_node->right_sibling;
-    }
-    
-  }
+  /* Finally, create the RMQ database for the blocks. */
+  return tree_lca;
 
+error:
+  //TreeLCA_delete(tree_lca);
+  return NULL;
 }
 
-/*
- * Test the depth and first_instance arrays. Return 0 if tests pass, else 1.
- */
-int verify_rmq_arrays(const SUFFIX_TREE* stree, const DBL_WORD* depths,
-                      const DBL_WORD* first_instances)
-{
-  /* First verify that the depths array has the +-1 property */
-  size_t i = 0;
-  for(i = 0; i < 2 * stree->num_nodes - 2; i++) { /* Note - 2 not - 1 */
-    long int diff = depths[i] - depths[i + 1];
-    
-    if(!labs(diff) == 1) {
-      log_warn("Consecutive values in depth array do not differ by 1.");
-      return 1;
-    }
-  }
 
-  /* Verify that first instances is strictly increasing. This doesn't
-   * necessarily have to be true, but since we assign labels in the order that
-   * we visit nodes in the same depth-first traversal, it should be true for
-   * us. */
-  for(i = 0; i < stree->num_nodes - 1; i++) {
-    if(first_instances[i+1] <= first_instances[i]){
-      log_warn("First instances is not increasing.");
-      return 1;
-    }
-  }
-
-  return 0;
-}
-
-/*
- * Functions for partitioning the depth array. Per the LCA algorithm, it needs
- * to be partitioned into blocks of size log(n)/2.
- *
- * get_parition returns block index for a given position and a given total
- * array size.
- *
- * get_partition_size returns the size of all but possibly the final block of
- * the array. The last block is the remained so can be irregularly sized.
- *
- * get_num_partition returns the number of blocks.
- */
-size_t get_partition(size_t pos, size_t n)
+size_t TreeLCA_lookup(const TreeLCA* tree_lca, size_t node_id1, size_t node_id2)
 {
-  return pos / get_partition_size(n);
-}
-size_t get_partition_size(size_t n)
-{
-  return (size_t)ceil(log2(n)/2);
-}
-size_t get_num_partitions(size_t n)
-{
-  return (size_t)ceil((double)n/get_partition_size(n));
-}
-
-/*
- * Calculate the minimum over each block in the depth array. Keep track of both
- * the value of the minimum and its position in the block.
- */
-void get_partition_minima(const size_t* depths, size_t depths_size,
-                          size_t** block_minima, size_t** minima_positions)
-{
-  *block_minima = calloc(get_num_partitions(depths_size), sizeof(size_t));
-  *minima_positions = calloc(get_num_partitions(depths_size), sizeof(size_t));
+  /* First, we find a position of each requested node in the Euler tour arrays. */
+  size_t tour_pos_1 = tree_lca->node_id_pos_in_tour[node_id1];
+  size_t tour_pos_2 = tree_lca->node_id_pos_in_tour[node_id2];
   
-  size_t current_block = 0;
-  size_t pos_in_current_block = 0;
-  size_t minimum_pos_in_current_block = (size_t)-1;
-  size_t current_minimum = (size_t)-1; 
-  size_t block = 0;
+  /* We'll need to know which one is first for some of the lookups to work
+   * right. */
+  size_t start_tour_pos = MIN(tour_pos_1, tour_pos_2);
+  size_t end_tour_pos = MAX(tour_pos_1, tour_pos_2);
 
-  size_t i = 0;
-  for(i = 0; i < depths_size; i++) {
+  /* Now, we want to know which block each node position falls in. */
+  size_t block_index_1 = get_block_index(start_tour_pos, tree_lca->euler_tour_length);
+  size_t block_index_2 = get_block_index(end_tour_pos, tree_lca->euler_tour_length);
 
-    block = get_partition(i, depths_size);
-    /* First check and see if this is a new block. If so, record the minimum
-     * and position of the last block and reset those values. */
-    if(block != current_block) {
-      (*block_minima)[current_block] = current_minimum;
-      (*minima_positions)[current_block] = minimum_pos_in_current_block;
-      current_minimum = (size_t)-1;
-      minimum_pos_in_current_block = (size_t)-1;
-      pos_in_current_block = 0;
-      current_block = block;
+  /* And the position, within its block, of each node position. */
+  size_t pos_in_block_1 = get_pos_in_block(start_tour_pos, tree_lca->euler_tour_length);
+  size_t pos_in_block_2 = get_pos_in_block(end_tour_pos, tree_lca->euler_tour_length);
+  
+  /* Then get the blocks themselves. Note that these are block in the node
+   * depths, not the node ids. block_size_[12] give the true size of each
+   * block, which may be different if it's the last block. */
+  size_t* block_1 = calloc(get_block_size(tree_lca->euler_tour_length),
+                           sizeof(size_t));
+  size_t block_size_1 = get_block(&block_1, block_index_1, tree_lca->euler_tour_depths,
+                                  tree_lca->euler_tour_length);
+
+  size_t* block_2 = calloc(get_block_size(tree_lca->euler_tour_length),
+                           sizeof(size_t));
+  size_t block_size_2 = get_block(&block_2, block_index_2, tree_lca->euler_tour_depths,
+                                  tree_lca->euler_tour_length);
+  
+  /* The value we want to calculate is the position of the minimum value
+   * between the node positions in the depth array. */ 
+  size_t pos_of_min_depth = 0;
+
+  /* If the two nodes lie in the same block, then we just need to do an RMQ on
+   * that block using the positions of each node within the block. */
+  if(block_index_1 == block_index_2) {
+    size_t min_pos_in_block = BRD_lookup(tree_lca->block_rmq_db,
+                                         block_1,
+                                         block_size_1,
+                                         pos_in_block_1,
+                                         pos_in_block_2 + 1);
+    pos_of_min_depth = block_index_1 * tree_lca->block_rmq_db->block_size + min_pos_in_block;
+  } else {
+    /* Different blocks, so we need to look in each block and then between the
+     * blocks to find the minimum value. */
+
+    /* Get the positions of the minimum values in each block. For the first
+     * block, start at the position and go to the end. For the second block,
+     * start at the beginning and go to the position. */
+    size_t min_pos_in_block_1 = BRD_lookup(tree_lca->block_rmq_db,
+                                           block_1, block_size_1,
+                                           pos_in_block_1,
+                                           block_size_1);
+    size_t min_pos_in_block_2 = BRD_lookup(tree_lca->block_rmq_db,
+                                           block_2, block_size_2,
+                                           0,
+                                           pos_in_block_2 + 1);
+
+    /* Get the depths at each of these positions. */ 
+    size_t min_depth_in_block_1 = block_1[min_pos_in_block_1];
+    size_t min_depth_in_block_2 = block_2[min_pos_in_block_2];
+    
+    /* Now get the block index for the block that contains the minimum value
+     * between the nodes' blocks. */
+    size_t min_between_block_index = SparseTable_lookup(
+        tree_lca->block_sparse_table, tree_lca->block_minima,
+        block_index_1 + 1, block_index_2);
+
+    /* And the position, within the tour, of the minimum value in that
+     * block. */
+    size_t min_between_tour_pos = min_between_block_index *
+                                  tree_lca->block_rmq_db->block_size +
+                                  tree_lca->minima_positions[min_between_block_index];
+    
+    size_t min_depth_between_blocks = tree_lca->euler_tour_depths[min_between_tour_pos];
+
+    if(min_depth_in_block_1 <= min_depth_between_blocks &&
+       min_depth_in_block_1 <= min_depth_in_block_2) {
+      pos_of_min_depth = block_index_1 * tree_lca->block_rmq_db->block_size + min_pos_in_block_1;
+    } else if(min_depth_in_block_2 <= min_depth_between_blocks &&
+              min_depth_in_block_2 <= min_depth_in_block_1) {
+      pos_of_min_depth = block_index_2 * tree_lca->block_rmq_db->block_size + min_pos_in_block_2;
+    } else if(min_depth_between_blocks <= min_depth_in_block_1 &&
+              min_depth_between_blocks <= min_depth_in_block_2) {
+      pos_of_min_depth = min_between_tour_pos;
     }
-
-    /* Then see if the depths array value at this position is lower than the
-     * current minimum for this block. */
-    if(depths[i] < current_minimum) {
-      current_minimum = depths[i];
-      minimum_pos_in_current_block = pos_in_current_block;
-    }
-    pos_in_current_block++;
   }
-  (*block_minima)[block] = current_minimum;
-  (*minima_positions)[block] = minimum_pos_in_current_block;
-
+  return tree_lca->euler_tour_nodes[pos_of_min_depth];
 }
-                      
 
 /*
  * Create an array that maps position in a string to a leaf of a suffix tree.

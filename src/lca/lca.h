@@ -1,24 +1,47 @@
 #ifndef _lca_H_
 #define _lca_H_
 
+#include "lca/euler_tour.h"
+#include "lca/normalized_blocks.h"
+#include "lca/sparse_table.h"
 #include "suffix_tree/suffix_tree.h"
 
-/* Functions to create arrays for RMQ from the suffix tree. */
-void prepare_rmq_arrays(const SUFFIX_TREE* stree, DBL_WORD** depths,
-                        DBL_WORD** first_instances);
-void euler_tour(NODE* node, DBL_WORD depth, DBL_WORD* pos_in_tour,
-                DBL_WORD* depths, DBL_WORD* first_instances);
-int verify_rmq_arrays(const SUFFIX_TREE* stree, const DBL_WORD* depths,
-                      const DBL_WORD* first_instances);
+typedef struct {
+  
+  /* Number of vertexes in the tree */
+  size_t num_nodes;
+  
+  /* The node ids as they're visited in the Euler tour. */
+  size_t* euler_tour_nodes;
 
-/* Functions for partitioning the depth array. */
-size_t get_partition(size_t pos, size_t n);
-size_t get_partition_size(size_t n);
-size_t get_num_partitions(size_t n);
+  /* The depths of nodes as they are visited in an Euler tour of the tree. */
+  size_t* euler_tour_depths;
 
-/* Function to get block minima, the A` and B arrays from the paper. */
-void get_partition_minima(const size_t* depths, size_t depths_size,
-                          size_t** block_minima, size_t** minima_positions);
+  /* The size of the euler tour depths array. */
+  size_t euler_tour_length;
+
+  /* Position of the first occurrence of each node id in euler_tour_depths. */
+  size_t* node_id_pos_in_tour;
+  
+  /* Euler tour depths is partitioned into blocks. block_minima contains the
+   * minimum value each block.  */
+  size_t* block_minima;
+  /* minima_positions stores the position of the minimum in each block. */
+  size_t* minima_positions;
+  /* Number of blocks length of block_minima */
+  size_t num_blocks;
+
+  /* SparseTable for finding minima between blocks. */  
+  SparseTable* block_sparse_table;
+
+  /* A database for range minimum queries on the blocks. */
+  BlockRMQDatabase* block_rmq_db;
+
+} TreeLCA; 
+
+TreeLCA* TreeLCA_create(const SUFFIX_TREE* stree);
+void TreeLCA_delete(TreeLCA* tree_lca);
+size_t TreeLCA_lookup(const TreeLCA* tree_lca, size_t node_id1, size_t node_id2);
 
 
 NODE** map_position_to_leaf(const SUFFIX_TREE* stree, size_t str_len);
