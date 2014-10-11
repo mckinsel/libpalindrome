@@ -155,7 +155,9 @@ char* test_block_minima()
 
   mu_assert(block_minima[5] == 7, "Incorrect block minimum."); 
   mu_assert(minima_positions[5] == 0, "Incorrect minimum position."); 
-
+  
+  free(block_minima);
+  free(minima_positions);
   return NULL;
 }
 char* all_tests()
