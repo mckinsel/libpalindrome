@@ -34,6 +34,8 @@ TreeLCA* TreeLCA_create(const SUFFIX_TREE* stree)
   euler_tour_arrays_create(stree, &tree_lca->euler_tour_nodes,
                            &tree_lca->euler_tour_depths,
                            &tree_lca->node_id_pos_in_tour);
+  check(tree_lca->euler_tour_nodes,
+        "Failed initialization of Euler tour nodes.");
   check(tree_lca->euler_tour_depths,
         "Failed initialization of Euler tour depths.");
   check(tree_lca->node_id_pos_in_tour,
@@ -52,13 +54,31 @@ TreeLCA* TreeLCA_create(const SUFFIX_TREE* stree)
                                                     tree_lca->num_blocks);
   
   /* Finally, create the RMQ database for the blocks. */
+  tree_lca->block_rmq_db = BRD_create(get_block_size(tree_lca->euler_tour_length));
+
   return tree_lca;
 
 error:
-  //TreeLCA_delete(tree_lca);
+  TreeLCA_delete(tree_lca);
   return NULL;
 }
 
+void TreeLCA_delete(TreeLCA* tree_lca)
+{
+ if(tree_lca) {
+   if(tree_lca->euler_tour_nodes) free(tree_lca->euler_tour_nodes);
+   if(tree_lca->euler_tour_depths) free(tree_lca->euler_tour_depths);
+   if(tree_lca->node_id_pos_in_tour) free(tree_lca->node_id_pos_in_tour);
+
+   if(tree_lca->block_minima) free(tree_lca->block_minima);
+   if(tree_lca->minima_positions) free(tree_lca->minima_positions);
+  
+   SparseTable_delete(tree_lca->block_sparse_table);
+   BRD_delete(tree_lca->block_rmq_db);
+   
+   free(tree_lca);
+ }
+}
 
 size_t TreeLCA_lookup(const TreeLCA* tree_lca, size_t node_id1, size_t node_id2)
 {
