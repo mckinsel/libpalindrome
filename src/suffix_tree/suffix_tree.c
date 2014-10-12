@@ -881,6 +881,22 @@ void SPA(
    return;
 }
 
+/*
+ * Set the index member for a node and all the nodes in its subtree. The index
+ * starts with label and increments as it visits each node in a depth-first
+ * search.
+ */
+void label_nodes(NODE* node, DBL_WORD* label)
+{
+  node->index = *label;
+  (*label)++;
+  NODE* next_node = node->sons;
+  while(next_node != 0) {
+    label_nodes(next_node, label);
+    next_node = next_node->right_sibling;
+  }
+}
+
 /******************************************************************************/
 /*
    ST_CreateTree :
@@ -967,17 +983,6 @@ error:
    return NULL;
 }
 
-/* Assign an index label to each node */
-void label_nodes(NODE* node, DBL_WORD* label)
-{
-  node->index = *label;
-  (*label)++;
-  NODE* next_node = node->sons;
-  while(next_node != 0) {
-    label_nodes(next_node, label);
-    next_node = next_node->right_sibling;
-  }
-}
 
 /******************************************************************************/
 /*
@@ -1172,3 +1177,26 @@ DBL_WORD ST_SelfTest(const SUFFIX_TREE* tree)
    return 1;
 }
 
+void node_array_dfs(NODE* node, NODE** node_array)
+{
+  node_array[node->index] = node;
+  NODE* next_node = node->sons;
+
+  while(next_node != 0) {
+    node_array_dfs(next_node, node_array);
+    next_node = next_node->right_sibling;
+  }
+}
+
+NODE** ST_CreateNodeArray(const SUFFIX_TREE* tree)
+{
+  NODE** node_array = calloc(tree->num_nodes, sizeof(NODE*));
+  check_mem(node_array);
+
+  node_array_dfs(tree->root, node_array);
+  return node_array;
+
+error:
+  if(node_array) free(node_array);
+  return NULL;
+}

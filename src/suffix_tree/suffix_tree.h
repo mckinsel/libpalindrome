@@ -167,9 +167,8 @@ DBL_WORD ST_SelfTest(const SUFFIX_TREE* tree);
 DBL_WORD get_node_label_end(const SUFFIX_TREE* tree, const NODE* node);
 
 /*
- * Set the index member for a node and all the nodes in its subtree. The index
- * starts with label and increments as it visits each node in a depth-first
- * search.
+ * Create an array of pointers to all the nodes.
  */
-void label_nodes(NODE* node, DBL_WORD* label);
+NODE** ST_CreateNodeArray(const SUFFIX_TREE* tree);
+
 #endif
