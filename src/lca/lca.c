@@ -85,7 +85,7 @@ size_t TreeLCA_lookup(const TreeLCA* tree_lca, size_t node_id1, size_t node_id2)
   /* First, we find a position of each requested node in the Euler tour arrays. */
   size_t tour_pos_1 = tree_lca->node_id_pos_in_tour[node_id1];
   size_t tour_pos_2 = tree_lca->node_id_pos_in_tour[node_id2];
-  
+
   /* We'll need to know which one is first for some of the lookups to work
    * right. */
   size_t start_tour_pos = MIN(tour_pos_1, tour_pos_2);
@@ -147,17 +147,25 @@ size_t TreeLCA_lookup(const TreeLCA* tree_lca, size_t node_id1, size_t node_id2)
     
     /* Now get the block index for the block that contains the minimum value
      * between the nodes' blocks. */
-    size_t min_between_block_index = SparseTable_lookup(
-        tree_lca->block_sparse_table, tree_lca->block_minima,
-        block_index_1 + 1, block_index_2);
+    size_t min_between_tour_pos = 0;
+    size_t min_depth_between_blocks = 0;
+    /* We only need to check if there is at least one block between them. */
+    if(block_index_2 > block_index_1 + 1) {
+      size_t min_between_block_index = SparseTable_lookup(
+          tree_lca->block_sparse_table, tree_lca->block_minima,
+          block_index_1 + 1, block_index_2);
 
-    /* And the position, within the tour, of the minimum value in that
-     * block. */
-    size_t min_between_tour_pos = min_between_block_index *
-                                  tree_lca->block_rmq_db->block_size +
-                                  tree_lca->minima_positions[min_between_block_index];
-    
-    size_t min_depth_between_blocks = tree_lca->euler_tour_depths[min_between_tour_pos];
+      /* And the position, within the tour, of the minimum value in that
+      * block. */
+      min_between_tour_pos = min_between_block_index *
+                             tree_lca->block_rmq_db->block_size +
+                             tree_lca->minima_positions[min_between_block_index];
+
+      min_depth_between_blocks = tree_lca->euler_tour_depths[min_between_tour_pos];
+    } else {
+      min_depth_between_blocks = (size_t)-1;
+      min_between_tour_pos = (size_t)-1;
+    }
 
     if(min_depth_in_block_1 <= min_depth_between_blocks &&
        min_depth_in_block_1 <= min_depth_in_block_2) {
