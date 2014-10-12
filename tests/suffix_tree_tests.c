@@ -121,6 +121,30 @@ char* test_node_labels_random()
   return NULL;
 }
 
+char* test_node_array()
+{
+  const size_t str_len = 10000;
+  char* str = malloc(str_len * sizeof(char));
+  unsigned int i = 0;
+
+  for(i = 0; i < 5; i++) {
+    random_string(str, str_len);
+    SUFFIX_TREE* stree = ST_CreateTree(str, str_len);
+    
+    NODE** node_array = ST_CreateNodeArray(stree);
+
+    size_t j = 0;
+    for(j = 0; j < stree->num_nodes; j++) {
+      mu_assert(node_array[i]->index == i, "Incorrect node array assignment.");
+    }
+    free(node_array);
+    ST_DeleteTree(stree);
+  }
+  
+  free(str);
+  return NULL;
+}
+
 char* all_tests()
 {
   mu_suite_start();
@@ -129,6 +153,7 @@ char* all_tests()
   mu_run_test(test_print_stree);
   mu_run_test(test_node_labels_banana);
   mu_run_test(test_node_labels_random);
+  mu_run_test(test_node_array);
 
   return NULL;
 }
