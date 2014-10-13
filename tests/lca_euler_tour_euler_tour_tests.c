@@ -10,7 +10,7 @@ char* test_abcde()
 
   SUFFIX_TREE* stree = ST_CreateTree(str, str_len);
   
-  DBL_WORD* tour;
+  NODE** tour;
   DBL_WORD* depths;
   DBL_WORD* first_instances;
   
@@ -24,9 +24,9 @@ char* test_abcde()
     if(i % 2 == 1) mu_assert(depths[i] == 1,
                              "Odd positions in ABCDE are not depth one.");
 
-    if(i % 2 == 0) mu_assert(tour[i] == root_id,
+    if(i % 2 == 0) mu_assert(tour[i]->index == root_id,
                              "Even position in ABCDE tour is not the root.");
-    if(i % 2 != 0) mu_assert(tour[i] != root_id,
+    if(i % 2 != 0) mu_assert(tour[i]->index != root_id,
                              "Odd position in ABCDE tour is the root.");
   }
   for(i = 0; i < stree->num_nodes; i++) {
@@ -55,7 +55,7 @@ char* test_banana()
 
   SUFFIX_TREE* stree = ST_CreateTree(str, str_len);
 
-  DBL_WORD* tour;
+  NODE** tour;
   DBL_WORD* depths;
   DBL_WORD* first_instances;
  
@@ -79,7 +79,7 @@ char* test_random()
   for(i = 0; i < 25; i++) {
     random_string(str, str_len);
     SUFFIX_TREE* stree = ST_CreateTree(str, str_len);
-    DBL_WORD* tour;
+    NODE** tour;
     DBL_WORD* depths;
     DBL_WORD* first_instances;
     euler_tour_arrays_create(stree, &tour, &depths, &first_instances);
