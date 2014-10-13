@@ -12,7 +12,7 @@ typedef struct {
   size_t num_nodes;
   
   /* The node ids as they're visited in the Euler tour. */
-  size_t* euler_tour_nodes;
+  NODE** euler_tour_nodes;
 
   /* The depths of nodes as they are visited in an Euler tour of the tree. */
   size_t* euler_tour_depths;
@@ -41,7 +41,8 @@ typedef struct {
 
 TreeLCA* TreeLCA_create(const SUFFIX_TREE* stree);
 void TreeLCA_delete(TreeLCA* tree_lca);
-size_t TreeLCA_lookup(const TreeLCA* tree_lca, size_t node_id1, size_t node_id2);
+NODE* TreeLCA_lookup(const TreeLCA* tree_lca, const NODE* node1, const NODE* node2);
+int TreeLCA_verify(const SUFFIX_TREE* stree, const TreeLCA* tree_lca);
 
 
 NODE** map_position_to_leaf(const SUFFIX_TREE* stree, size_t str_len);

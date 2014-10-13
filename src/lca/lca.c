@@ -29,7 +29,8 @@ TreeLCA* TreeLCA_create(const SUFFIX_TREE* stree)
 {
   TreeLCA* tree_lca = malloc(sizeof(TreeLCA));
   check_mem(tree_lca);
-  
+  tree_lca->num_nodes = stree->num_nodes;
+
   /* First create the Euler tour */
   euler_tour_arrays_create(stree, &tree_lca->euler_tour_nodes,
                            &tree_lca->euler_tour_depths,
@@ -80,8 +81,10 @@ void TreeLCA_delete(TreeLCA* tree_lca)
  }
 }
 
-size_t TreeLCA_lookup(const TreeLCA* tree_lca, size_t node_id1, size_t node_id2)
+NODE* TreeLCA_lookup(const TreeLCA* tree_lca, const NODE* node1, const NODE* node2)
 {
+  size_t node_id1 = node1->index;
+  size_t node_id2 = node2->index;
   /* First, we find a position of each requested node in the Euler tour arrays. */
   size_t tour_pos_1 = tree_lca->node_id_pos_in_tour[node_id1];
   size_t tour_pos_2 = tree_lca->node_id_pos_in_tour[node_id2];
@@ -178,7 +181,78 @@ size_t TreeLCA_lookup(const TreeLCA* tree_lca, size_t node_id1, size_t node_id2)
       pos_of_min_depth = min_between_tour_pos;
     }
   }
+  free(block_1);
+  free(block_2);
   return tree_lca->euler_tour_nodes[pos_of_min_depth];
+}
+
+/*
+ * Verify the lowest common ancestors calculated using TreeLCA by comparing
+ * them against the naive n^2 algorithm.
+ *
+ * Inputs:
+ *  SUFFIX_TREE* stree    :   Suffix tree in which we want to find LCAs
+ *  TreeLCA*  tree_lca    :   Struct used for constant time LCA lookups
+ *
+ * Output:
+ *  0 if tests pass, else 1.
+ */
+int TreeLCA_verify(const SUFFIX_TREE* stree, const TreeLCA* tree_lca)
+{
+  NODE** node_array = ST_CreateNodeArray(stree);
+  
+  /* Iterate over all possible node pairs. */
+  size_t i = 0;
+  size_t j = 0;
+  for(i = 0; i < tree_lca->num_nodes; i++) {
+    for(j = 0; j < tree_lca->num_nodes; j++) {
+      NODE* node1 = node_array[i];
+      NODE* node2 = node_array[j];
+      
+      /* First get the LCA node using the constant time algorithm. */
+      NODE* obs_node = TreeLCA_lookup(tree_lca, node1, node2);
+      NODE* exp_node = NULL;
+
+      /* Then get the LCA node by tracing from each node back to the root. */
+      NODE** node1_to_root = calloc(20, sizeof(NODE*));
+      size_t node1_to_root_size = 20;
+      size_t node1_to_root_i = 0;
+
+      NODE* next_node = node1;
+      while(next_node != 0) {
+        node1_to_root[node1_to_root_i] = next_node;
+        node1_to_root_i++;
+        if(node1_to_root_i == node1_to_root_size) {
+          node1_to_root = realloc(node1_to_root,
+                                  (20 + node1_to_root_size) * sizeof(size_t));
+          node1_to_root_size += 20;
+        }
+        next_node = next_node->father;
+      }
+      
+      next_node = node2;
+      while(next_node != 0 && exp_node == NULL) {
+        size_t k = 0;
+        for(k = 0; k < node1_to_root_i; k++) {
+          if(next_node == node1_to_root[k]) {
+            exp_node = next_node;
+            break;
+          }
+        }
+        next_node = next_node->father;
+      }
+
+      if(obs_node != exp_node) {
+        log_warn("Got incorrect LCA. Should get node %zu but got node %zu.",
+                 exp_node->index, obs_node->index);
+        free(node1_to_root);
+        return 1;
+      }
+      free(node1_to_root);
+    }
+  }
+  free(node_array);
+  return 0;
 }
 
 /*
