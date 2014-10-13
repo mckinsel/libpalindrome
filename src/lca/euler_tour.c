@@ -26,14 +26,14 @@
  *  responsible for freeing.
  */
 void euler_tour_arrays_create(const SUFFIX_TREE* stree,
-                              size_t** tour,
+                              NODE*** tour,
                               size_t** depths,
                               size_t** first_instances)
 {
   /* The length of the Euler tour */
   size_t array_size = 2 * stree->num_nodes - 1;
   
-  *tour = calloc(array_size, sizeof(size_t));
+  *tour = calloc(array_size, sizeof(NODE*));
   *depths = calloc(array_size, sizeof(size_t));
   *first_instances = calloc(stree->num_nodes, sizeof(size_t));
   
@@ -59,11 +59,11 @@ void euler_tour_arrays_create(const SUFFIX_TREE* stree,
  *  None, but populates depths and first_instances.
  */
 void euler_tour(NODE* node, size_t depth, size_t* pos_in_tour,
-                size_t* tour, size_t* depths, size_t* first_instances)
+                NODE** tour, size_t* depths, size_t* first_instances)
 {
   NODE* next_node = node->sons;
   
-  tour[*pos_in_tour] = node->index;
+  tour[*pos_in_tour] = node;
   depths[*pos_in_tour] = depth;
   if(first_instances[node->index] == 0) {
     first_instances[node->index] = *pos_in_tour;
@@ -74,7 +74,7 @@ void euler_tour(NODE* node, size_t depth, size_t* pos_in_tour,
     while(next_node != 0) {
       euler_tour(next_node, depth + 1, pos_in_tour,
                  tour, depths, first_instances); 
-      tour[*pos_in_tour] = node->index;
+      tour[*pos_in_tour] = node;
       depths[*pos_in_tour] = depth;
       (*pos_in_tour)++;
       next_node = next_node->right_sibling;
@@ -87,7 +87,7 @@ void euler_tour(NODE* node, size_t depth, size_t* pos_in_tour,
 /*
  * Test the depth and first_instance arrays. Return 0 if tests pass, else 1.
  */
-int verify_rmq_arrays(const SUFFIX_TREE* stree, const size_t* tour,
+int verify_rmq_arrays(const SUFFIX_TREE* stree, NODE** tour,
                       const size_t* depths,
                       const size_t* first_instances)
 {
@@ -106,11 +106,11 @@ int verify_rmq_arrays(const SUFFIX_TREE* stree, const size_t* tour,
    * be the root. And, for A, B, C in the tour, if A == C, then B is a leaf in
    * the tree, and the number of leaves is the lenght of the suffix tree
    * string. */
-  if(tour[0] != stree->root->index) {
+  if(tour[0] != stree->root) {
     log_warn("First element in tour is not the root.");
     return 1;
   }
-  if(tour[2 * stree->num_nodes - 2] != stree->root->index) {
+  if(tour[2 * stree->num_nodes - 2] != stree->root) {
     log_warn("Last element in tour is not the root.");
     return 1;
   }

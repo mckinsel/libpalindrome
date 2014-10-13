@@ -10,7 +10,7 @@
  * depths in first_instances.
  */
 void euler_tour_arrays_create(const SUFFIX_TREE* stree,
-                              size_t** tour,
+                              NODE*** tour,
                               size_t** depths,
                               size_t** first_instances);
 
@@ -19,11 +19,11 @@ void euler_tour_arrays_create(const SUFFIX_TREE* stree,
  * euler_tour_arrays_create, and proceeds recursively through node's subtree.
  */
 void euler_tour(NODE* node, size_t depth, size_t* pos_in_tour,
-                size_t* tour, size_t* depths, size_t* first_instances);
+                NODE** tour, size_t* depths, size_t* first_instances);
 
 /* Test that the depths and first_instances arrays are correct. */
 int verify_rmq_arrays(const SUFFIX_TREE* stree,
-                      const size_t* tour,
+                      NODE** tour,
                       const size_t* depths,
                       const size_t* first_instances);
 
