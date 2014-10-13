@@ -192,7 +192,7 @@ BlockRMQDatabase* BRD_create(size_t block_size)
   block_rmq_db->block_tables = calloc(block_rmq_db->num_blocks, sizeof(BlockRMQTable*));
   check_mem(block_rmq_db->block_tables);
   
-  block_rmq_db->remainder_block_table = calloc(1, sizeof(BlockRMQTable));
+  block_rmq_db->remainder_block_table = NULL;
   block_rmq_db->remainder_block_id  = 0;
   block_rmq_db->remainder_is_initialized = 0; 
   return block_rmq_db;
