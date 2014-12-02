@@ -1,10 +1,10 @@
 #include "minunit.h"
 #include "test_utils.h"
 #include "suffix_tree/suffix_tree.h"
-#include "kolpakov_kucherov.h"
+#include "kolpakov_kucherov/equivalence_classes.h"
 
 /* Test assignment of equivalence classes for BANANA. See the function comment
- * for create_eq_class_tables for more detail, but the expected values are
+ * for create_equiv_class_tables for more detail, but the expected values are
  *
  *  forward:              reverse:
  *    0   :   1             0   :   0
@@ -27,8 +27,8 @@ char* test_banana()
   size_t  str_len = sizeof(str) - 1;
   size_t substr_len = 3;
 
-  create_eq_class_tables(str, str_len, substr_len, &forward_table,
-                         &reverse_table, &stree);
+  create_equiv_class_tables(str, str_len, substr_len, &forward_table,
+                            &reverse_table, &stree);
   
   mu_assert(forward_table[1] == forward_table[3],
             "Failed to assign same eq class id to all the ANA substrings.");
@@ -53,8 +53,8 @@ char* test_banana()
   mu_assert(reverse_table[2] == 0,
             "Failed to assign 0 to invalid substrings.");
   
-  int rc = verify_eq_class_tables(str, str_len, substr_len,
-                                  forward_table, reverse_table);
+  int rc = verify_equiv_class_tables(str, str_len, substr_len,
+                                     forward_table, reverse_table);
 
   mu_assert(rc == 0, "Failed equivalence class verification.");
 
@@ -75,8 +75,8 @@ char* test_eq_class_verification()
   size_t  str_len = sizeof(str) - 1;
   size_t substr_len = 3;
 
-  create_eq_class_tables(str, str_len, substr_len, &forward_table,
-                         &reverse_table, &stree);
+  create_equiv_class_tables(str, str_len, substr_len, &forward_table,
+                            &reverse_table, &stree);
   size_t* bad_forward = malloc(sizeof(size_t)*(str_len+1));
   size_t* bad_reverse = malloc(sizeof(size_t)*(str_len+1));
 
@@ -84,14 +84,14 @@ char* test_eq_class_verification()
   memcpy(bad_reverse, reverse_table, sizeof(size_t)*(str_len+1));
   bad_forward[1] = 99;
   fprintf(stderr, "Expect eq_class warning:\n");
-  int ret = verify_eq_class_tables(str, str_len, substr_len, bad_forward, bad_reverse);
+  int ret = verify_equiv_class_tables(str, str_len, substr_len, bad_forward, bad_reverse);
   mu_assert(ret == 1, "equivalence class marked incorrect classes as correct.");
 
   memcpy(bad_forward, forward_table, sizeof(size_t)*(str_len+1));
   memcpy(bad_reverse, reverse_table, sizeof(size_t)*(str_len+1));
   bad_reverse[2] = 1;
   fprintf(stderr, "Expect eq_class warning:\n");
-  ret = verify_eq_class_tables(str, str_len, substr_len, bad_forward, bad_reverse);
+  ret = verify_equiv_class_tables(str, str_len, substr_len, bad_forward, bad_reverse);
   mu_assert(ret == 1, "equivalence class marked incorrect classes as correct.");
   
   free(forward_table);
@@ -119,10 +119,10 @@ char* test_random_strings()
   for(i = 0; i < 5; i++) {
     random_string(str, str_len);
     substr_len = rand() % 100;
-    create_eq_class_tables(str, str_len, substr_len, &forward_table,
+    create_equiv_class_tables(str, str_len, substr_len, &forward_table,
                            &reverse_table, &stree);
 
-    ret = verify_eq_class_tables(str, str_len, substr_len,
+    ret = verify_equiv_class_tables(str, str_len, substr_len,
                                  forward_table, reverse_table);
 
     mu_assert(ret == 0, "Failed equivalence class verification.");
