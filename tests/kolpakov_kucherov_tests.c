@@ -1,6 +1,6 @@
 #include "minunit.h"
 #include "suffix_tree/suffix_tree.h"
-#include "kolpakov_kucherov.h"
+#include "kolpakov_kucherov/utils.h"
 
 char* test_create_query_and_reverse()
 {
