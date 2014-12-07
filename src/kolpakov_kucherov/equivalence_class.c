@@ -5,49 +5,51 @@
 #define Index_T EquivClassIndex_T
 #define Table_T EquivClassTable_T
 
+struct SubstrClassDFS {
+  size_t  substr_length;
+  size_t* substr_classes;
+  size_t* class_label;
+};
+
+
 /*
- * Recursive function for depth-first traversal of suffix tree when creating
+ * Helper function for depth-first traversal of suffix tree when creating
  * substring annotation.
  *
  * Inputs:
  *    SUFFIX_TREE* stree      :   Initialized suffix tree
  *    NODE* node              :   Current node in stree
- *    size_t* annotations     :   Array of substring annotions we're populating
- *    size_t* class_label     :   Pointer to current label value
+ *    void* data              :   Void* to be a proper NODE_FUNC_T, but a
+ *                                pointer to a struct SubstrClassDFS that will
+ *                                get updated during traversal
  *    size_t prev_suf_length  :   Sum of lengths of suffix edges seen so far in
  *                                depth-first traversal
- *    size_t substr_len       :   Substring length used for annotation
  *
  * Outputs:
- *    None. Updates annotations and class_label
- *
+ *    size_t current_suf_length : prev_suf_length plus the length of the suffix
+ *                                portion associated with this node
  */
-void annotate_substr_classes_dfs(const SUFFIX_TREE* stree,
-                                 const NODE* node,
-                                 size_t* substr_classes,
-                                 size_t* class_label,
-                                 size_t prev_suf_length,
-                                 size_t substr_len)
+size_t annotate_substr_node_func(const SUFFIX_TREE* stree, const NODE* node,
+                                 void *data, size_t prev_suf_length)
 {
+
+  if(node == stree->root) return 0;
+  struct SubstrClassDFS* dfs_data = data;
   size_t edge_start = node->edge_label_start;
   size_t edge_end = get_node_label_end(stree, node);
   size_t current_suf_length = prev_suf_length + edge_end - edge_start + 1;
 
-  if(current_suf_length >= substr_len && prev_suf_length < substr_len) {
-    (*class_label)++;
+  if(current_suf_length >= dfs_data->substr_length &&
+      prev_suf_length < dfs_data->substr_length) {
+    (*dfs_data->class_label)++;
   }
 
-  if(edge_end == stree->e && current_suf_length - 1 >= substr_len) {
+  if(edge_end == stree->e && current_suf_length - 1 >= dfs_data->substr_length) {
     size_t suffix_start = stree->e - current_suf_length;
-    substr_classes[suffix_start] = *class_label;
+    dfs_data->substr_classes[suffix_start] = *dfs_data->class_label;
   }
 
-  NODE* next_node = node->sons;
-  while(next_node != 0) {
-    annotate_substr_classes_dfs(stree, next_node, substr_classes, class_label,
-                                current_suf_length, substr_len);
-    next_node = next_node->right_sibling;
-  }
+  return current_suf_length;
 }
 
 /* 
@@ -65,46 +67,41 @@ void annotate_substr_classes_dfs(const SUFFIX_TREE* stree,
  * so they are assigned id 0.
  *
  * Inputs:
- *    size_t str_len      :   Length of string from which stree was built, not
- *                            including the null terminator
- *    size_t substr_len   :   Length of substrings used to assign class ids
- *    SUFFIX_TREE* stree  :   Suffix tree for str
+ *    size_t str_length     :   Length of string from which stree was built, not
+ *                              including the null terminator
+ *    size_t substr_length  :   Length of substrings used to assign class ids
+ *    SUFFIX_TREE* stree    :   Suffix tree for str
  *
  * Outputs:
  *    size_t* substr_classes  :   Array of length str_len containing ids for each
  *                                position in str
  *
  * Notes:
- *    This function creates a suffix tree and then traverses it once,
+ *    This function traverses a suffix tree once,
  *    performing constant work at each node, so its time complexity is linear
  *    in str_len.
  */
-size_t* annotate_substr_classes(size_t str_len, size_t substr_len,
-                                    const SUFFIX_TREE* stree)
+size_t* annotate_substr_classes(size_t str_length, size_t substr_length,
+                                const SUFFIX_TREE* stree)
 {
-  size_t* substr_classes  = NULL;
-  size_t* class_label = NULL;
-  substr_classes = calloc(1, str_len * sizeof(size_t));
-  check_mem(substr_classes);
-  class_label = calloc(1, sizeof(size_t));
-  check_mem(class_label);
-  
-  /* Iterate through each child of the root, passing the child to the recursive
-   * helper function. */
-  NODE* child = stree->root->sons;
-  while(child != 0) {
-    annotate_substr_classes_dfs(stree, child, substr_classes, class_label,
-                                0, substr_len); /* prev_suf_length = 0 */
-    child = child->right_sibling;
-  }
+  struct SubstrClassDFS* dfs_data = malloc(sizeof(struct SubstrClassDFS));
+  dfs_data->substr_length = substr_length;
+  dfs_data->class_label = calloc(1, sizeof(size_t));
+  check_mem(dfs_data->class_label);
+  dfs_data->substr_classes = calloc(1, str_length * sizeof(size_t));
    
-  free(class_label);
+  ST_depth_first_walk(stree, stree->root, annotate_substr_node_func, dfs_data, 0);
+
+  size_t* substr_classes = dfs_data->substr_classes;
+  free(dfs_data->class_label);
+  free(dfs_data);
 
   return substr_classes;
 
 error:
-  if(substr_classes) free(substr_classes);
-  if(class_label) free(class_label);
+  if(dfs_data->substr_classes) free(dfs_data->substr_classes);
+  if(dfs_data->class_label) free(dfs_data->class_label);
+  if(dfs_data) free(dfs_data);
   return NULL;
 }
 
