@@ -47,24 +47,36 @@ void length_constrained_palindromes(char* query_string, size_t query_length,
     size_t left_class = reverse_table[j];
     /* We can continue if we're not past min_arm_length yet. */
     if(left_class == 0) continue;
-
-    eq_array = EquivClassArray_add(eq_array, left_class, j, query_string);
     
+    eq_array = EquivClassArray_add(eq_array, left_class, j, query_string);
+
     size_t right_class = forward_table[j];
+
     EquivClassItem_T search_item =
         EquivClassArray_get_previous_start_item(eq_array, right_class);
     
+    /* If we've never seen a LeftClass for this RightClass, then we know it's
+     * not a palindrome, and we can continue. */
+    if(!search_item) continue;
+
     while(search_item->position < j - max_gap_length) {
-      search_item = search_item->next_item;
+      EquivClassItem_T next_search_item = search_item->next_item;
+      if(next_search_item) {
+        search_item = search_item->next_item;
+      } else {
+        break;
+      }
     }
 
     eq_array = EquivClassArray_set_previous_start_item(eq_array,
                                                        right_class,
                                                        search_item);
 
-    while(search_item->position <= j - min_gap_length) {
+    /* Make sure that the search_item isn't NULL before continuing with another
+     * iteration. */
+    while(search_item && search_item->position <= j - min_gap_length) {
       if(query_string[search_item->position] != query_string[j - 1]) {
-        /* Find the longest common prefix and save the palindrome */
+        /* TODO: Find the longest common prefix and save the palindrome */
         printf("Palindrome at %zu - %zu\n", j, search_item->position);
       }
       search_item = search_item->next_run;
