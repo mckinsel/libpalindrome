@@ -196,7 +196,13 @@ Item_T  EquivClassArray_get_previous_start_item(Array_T array,
         "equiv_class_index is greater than number of equiv classes in the array.");
 
   List_T list = array->equiv_class_lists[equiv_class_index];
-  return list->previous_start_item;
+  Item_T previous_start_item = list->previous_start_item;
+
+  /* If the previous_start_item has never been set, it will be NULL. In that
+   * case, return the first item. */
+  if(!previous_start_item) previous_start_item = list->first_item;
+
+  return previous_start_item;
 
 error:
   return NULL;
