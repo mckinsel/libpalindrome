@@ -1,6 +1,21 @@
 #ifndef _kolpakov_kucherov_equivalence_class_tables_H_
 #define _kolpakov_kucherov_equivalence_class_tables_H_
 
+/*
+ * The length-constrained palindrome described by Kolpakov
+ * and Kucherov describes "items" and some functions like
+ * LastItem and LastRun for equivalence classes. Those are
+ * described here.
+ *
+ * Internally, this requires an array of linked lists with
+ * some extra pointers, but the interface is relatively
+ * straightforward. There's a struct EquivClassItem_T that
+ * has a couple of pointers and also knows the position in
+ * the query string to which it refers. Then, there's a
+ * EquivClassArray_T for the array itself, but this is
+ * opaque and relies on a few functions for any interaction.
+ */
+
 #include <stdlib.h>
 
 /* TYPES */
@@ -85,7 +100,7 @@ Array_T EquivClassArray_set_previous_start_item(Array_T array,
  *
  * Params:
  *  EquivClassArray_T array   :   The array containing the equivalence class
- *  size_t equiv_class        :   The index of the equivalence class
+ *  size_t equiv_class_index  :   The index of the equivalence class
  *
  * Returns:
  *  EquivClassItem_T item     :   The PreviousStartItem for the equivalence
@@ -95,6 +110,13 @@ Item_T  EquivClassArray_get_previous_start_item(Array_T array,
                                                 size_t equiv_class_index);
 /*
  * Get the LastItem for an equivalence class.
+ *
+ * Params:
+ *  EquivClassArray_T array   :   The array containing the equivalence class
+ *  size_t equiv_class_index  :   The index of the equivalence class
+ *
+ * Returns:
+ *  EquivClassItem_T item     :   The LastItem for the equivalence class
  */
 Item_T EquivClassArray_get_last_item(Array_T array, size_t equiv_class_index);
 
