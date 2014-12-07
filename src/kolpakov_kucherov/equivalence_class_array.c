@@ -178,6 +178,7 @@ Array_T EquivClassArray_set_previous_start_item(Array_T array,
   check(array, "Attempting to add item to NULL EquivClassArray_T.");
   check(equiv_class_index < array->num_equiv_classes,
         "equiv_class_index is greater than number of equiv classes in the array.");
+  check(item, "Attempting to add a NULL EquivClassItem_T to the array.");
 
   List_T list = array->equiv_class_lists[equiv_class_index];
   list->previous_start_item = item;
