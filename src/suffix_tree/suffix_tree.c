@@ -1200,3 +1200,17 @@ error:
   if(node_array) free(node_array);
   return NULL;
 }
+
+void ST_depth_first_walk(const SUFFIX_TREE* tree, const NODE* node,
+                         NODE_FUNC_T node_func, void* data,
+                         size_t counter)
+{
+  size_t new_counter = node_func(tree, node, data, counter);
+
+  NODE* next_node = node->sons;
+
+  while(next_node != 0) {
+    ST_depth_first_walk(tree, next_node, node_func, data, new_counter);
+    next_node = next_node->right_sibling;
+  }
+}

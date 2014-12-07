@@ -171,4 +171,9 @@ DBL_WORD get_node_label_end(const SUFFIX_TREE* tree, const NODE* node);
  */
 NODE** ST_CreateNodeArray(const SUFFIX_TREE* tree);
 
+typedef size_t (*NODE_FUNC_T)(const SUFFIX_TREE* tree, const NODE* node,
+                              void* data, size_t counter);
+
+void ST_depth_first_walk(const SUFFIX_TREE* tree, const NODE* node,
+                         NODE_FUNC_T node_func, void* data, size_t counter);
 #endif
