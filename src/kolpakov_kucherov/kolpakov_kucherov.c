@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "kolpakov_kucherov/equivalence_classes.h"
+#include "kolpakov_kucherov/equivalence_class.h"
 #include "kolpakov_kucherov/equivalence_class_array.h"
 #include "suffix_tree/suffix_tree.h"
 

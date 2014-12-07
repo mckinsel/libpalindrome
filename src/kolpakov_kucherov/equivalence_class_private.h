@@ -1,7 +1,7 @@
-#ifndef _kolpakov_kucherov_equivalence_classes_private_H_
-#define _kolpakov_kucherov_equivalence_classes_private_H_
+#ifndef _kolpakov_kucherov_equivalence_class_private_H_
+#define _kolpakov_kucherov_equivalence_class_private_H_
 
-#include "equivalence_classes.h"
+#include "equivalence_class.h"
 
 void annotate_substr_classes_dfs(const SUFFIX_TREE* stree,
                                  const NODE* node,

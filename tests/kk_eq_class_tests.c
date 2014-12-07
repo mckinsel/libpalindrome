@@ -1,7 +1,7 @@
 #include "minunit.h"
 #include "test_utils.h"
 #include "suffix_tree/suffix_tree.h"
-#include "kolpakov_kucherov/equivalence_classes.h"
+#include "kolpakov_kucherov/equivalence_class.h"
 
 /* Test assignment of equivalence classes for BANANA. See the function comment
  * for create_equiv_class_tables for more detail, but the expected values are

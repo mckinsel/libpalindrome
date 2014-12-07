@@ -1,4 +1,4 @@
-#include "equivalence_classes.h"
+#include "equivalence_class.h"
 #include "dbg.h"
 #include "kolpakov_kucherov/utils.h"
 

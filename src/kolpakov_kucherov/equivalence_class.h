@@ -1,5 +1,5 @@
-#ifndef _kolpakov_kucherov_equivalence_classes_H_
-#define _kolpakov_kucherov_equivalence_classes_H_
+#ifndef _kolpakov_kucherov_equivalence_class_H_
+#define _kolpakov_kucherov_equivalence_class_H_
 
 #include <stdlib.h>
 

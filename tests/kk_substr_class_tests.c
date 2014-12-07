@@ -1,7 +1,7 @@
 #include "minunit.h"
 #include "test_utils.h"
 #include "suffix_tree/suffix_tree.h"
-#include "kolpakov_kucherov/equivalence_classes_private.h"
+#include "kolpakov_kucherov/equivalence_class_private.h"
 
 /*
  * Test substring class assignment for the string MISSISSIPPI.
