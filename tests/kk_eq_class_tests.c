@@ -2,6 +2,7 @@
 #include "test_utils.h"
 #include "suffix_tree/suffix_tree.h"
 #include "kolpakov_kucherov/equivalence_class.h"
+#include "kolpakov_kucherov/equivalence_class_private.h"
 
 /* Test assignment of equivalence classes for BANANA. See the function comment
  * for create_equiv_class_tables for more detail, but the expected values are
@@ -19,47 +20,46 @@
  */
 char* test_banana()
 {
-  size_t* forward_table = NULL;
-  size_t* reverse_table = NULL;
   SUFFIX_TREE* stree = NULL;
 
   char str[] = "BANANA";
   size_t  str_len = sizeof(str) - 1;
   size_t substr_len = 3;
 
-  create_equiv_class_tables(str, str_len, substr_len, &forward_table,
-                            &reverse_table, &stree);
+  EquivClassTable_T eq_table = EquivClassTable_create(str, str_len, &stree, substr_len);
   
-  mu_assert(forward_table[1] == forward_table[3],
+  mu_assert(EquivClassTable_forward_lookup(eq_table, 1) ==
+              EquivClassTable_forward_lookup(eq_table, 3),
             "Failed to assign same eq class id to all the ANA substrings.");
-  mu_assert(forward_table[3] == reverse_table[4],
+  mu_assert(EquivClassTable_forward_lookup(eq_table, 3) ==
+              EquivClassTable_reverse_lookup(eq_table, 4),
             "Failed to assign same eq class id to all the ANA substrings.");
-  mu_assert(reverse_table[4] == reverse_table[6],
+  mu_assert(EquivClassTable_reverse_lookup(eq_table, 4) ==
+              EquivClassTable_reverse_lookup(eq_table, 6),
             "Failed to assign same eq class id to all the ANA substrings.");
 
-  mu_assert(forward_table[2] == reverse_table[5],
+  mu_assert(EquivClassTable_forward_lookup(eq_table, 2) ==
+            EquivClassTable_reverse_lookup(eq_table, 5),
             "Failed to assign same eq class id to all the NAN substrings.");
   
-  mu_assert(forward_table[4] == 0,
+  mu_assert(EquivClassTable_forward_lookup(eq_table, 4) == 0,
             "Failed to assign 0 to invalid substrings.");
-  mu_assert(forward_table[5] == 0,
+  mu_assert(EquivClassTable_forward_lookup(eq_table, 5) == 0,
             "Failed to assign 0 to invalid substrings.");
-  mu_assert(forward_table[6] == 0,
+  mu_assert(EquivClassTable_forward_lookup(eq_table, 6) == 0,
             "Failed to assign 0 to invalid substrings.");
-  mu_assert(reverse_table[0] == 0,
+  mu_assert(EquivClassTable_reverse_lookup(eq_table, 0) == 0,
             "Failed to assign 0 to invalid substrings.");
-  mu_assert(reverse_table[1] == 0,
+  mu_assert(EquivClassTable_reverse_lookup(eq_table, 1) == 0,
             "Failed to assign 0 to invalid substrings.");
-  mu_assert(reverse_table[2] == 0,
+  mu_assert(EquivClassTable_reverse_lookup(eq_table, 2) == 0,
             "Failed to assign 0 to invalid substrings.");
   
-  int rc = verify_equiv_class_tables(str, str_len, substr_len,
-                                     forward_table, reverse_table);
+  int rc = EquivClassTable_verify(str, str_len, eq_table, substr_len);
 
   mu_assert(rc == 0, "Failed equivalence class verification.");
 
-  free(forward_table);
-  free(reverse_table);
+  EquivClassTable_delete(&eq_table);
   ST_DeleteTree(stree);
 
   return NULL;
@@ -67,42 +67,39 @@ char* test_banana()
 
 char* test_eq_class_verification()
 {
-  size_t* forward_table = NULL;
-  size_t* reverse_table = NULL;
   SUFFIX_TREE* stree = NULL;
 
   char str[] = "BANANA";
   size_t  str_len = sizeof(str) - 1;
   size_t substr_len = 3;
 
-  create_equiv_class_tables(str, str_len, substr_len, &forward_table,
-                            &reverse_table, &stree);
-  size_t* bad_forward = malloc(sizeof(size_t)*(str_len+1));
-  size_t* bad_reverse = malloc(sizeof(size_t)*(str_len+1));
+  EquivClassTable_T eq_table = EquivClassTable_create(str, str_len, &stree, substr_len);
 
-  memcpy(bad_forward, forward_table, sizeof(size_t)*(str_len+1));
-  memcpy(bad_reverse, reverse_table, sizeof(size_t)*(str_len+1));
-  bad_forward[1] = 99;
+  EquivClassIndex_T* good_forward = malloc(sizeof(EquivClassIndex_T)*(str_len+1));
+  EquivClassIndex_T* good_reverse = malloc(sizeof(EquivClassIndex_T)*(str_len+1));
+  
+  memcpy(good_forward, eq_table->forward_classes, sizeof(EquivClassIndex_T)*(str_len+1));
+  memcpy(good_reverse, eq_table->reverse_classes, sizeof(EquivClassIndex_T)*(str_len+1));
+
+  eq_table->forward_classes[1] = 99;
   fprintf(stderr, "Expect eq_class warning:\n");
-  int ret = verify_equiv_class_tables(str, str_len, substr_len, bad_forward, bad_reverse);
+  int ret = EquivClassTable_verify(str, str_len, eq_table, substr_len);
   mu_assert(ret == 1, "equivalence class marked incorrect classes as correct.");
 
-  memcpy(bad_forward, forward_table, sizeof(size_t)*(str_len+1));
-  memcpy(bad_reverse, reverse_table, sizeof(size_t)*(str_len+1));
-  bad_reverse[2] = 1;
+  memcpy(eq_table->forward_classes, good_forward, sizeof(EquivClassIndex_T)*(str_len+1));
+  
+  eq_table->reverse_classes[2] = 1;
   fprintf(stderr, "Expect eq_class warning:\n");
-  ret = verify_equiv_class_tables(str, str_len, substr_len, bad_forward, bad_reverse);
+  ret = EquivClassTable_verify(str, str_len, eq_table, substr_len);
   mu_assert(ret == 1, "equivalence class marked incorrect classes as correct.");
   
-  free(forward_table);
-  free(reverse_table);
-  free(bad_forward);
-  free(bad_reverse);
+  EquivClassTable_delete(&eq_table);
+  free(good_forward);
+  free(good_reverse);
   ST_DeleteTree(stree); 
 
   return NULL;
 }
-
 /* Test random strings using the verification function */
 char* test_random_strings()
 {
@@ -110,25 +107,22 @@ char* test_random_strings()
   char* str = calloc((str_len + 1), sizeof(char));
   size_t substr_len;
 
-  size_t* forward_table = NULL;
-  size_t* reverse_table = NULL;
   SUFFIX_TREE* stree = NULL;
+  EquivClassTable_T eq_table = NULL;
 
   int ret = 0;
   unsigned int i = 0;
   for(i = 0; i < 5; i++) {
     random_string(str, str_len);
     substr_len = rand() % 100;
-    create_equiv_class_tables(str, str_len, substr_len, &forward_table,
-                           &reverse_table, &stree);
 
-    ret = verify_equiv_class_tables(str, str_len, substr_len,
-                                 forward_table, reverse_table);
+    eq_table = EquivClassTable_create(str, str_len, &stree, substr_len);
+
+    ret = EquivClassTable_verify(str, str_len, eq_table, substr_len);
 
     mu_assert(ret == 0, "Failed equivalence class verification.");
 
-    free(forward_table);
-    free(reverse_table);
+    EquivClassTable_delete(&eq_table);
     ST_DeleteTree(stree);
   }
   

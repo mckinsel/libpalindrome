@@ -5,14 +5,30 @@
 
 #include "suffix_tree/suffix_tree.h"
 
-void create_equiv_class_tables(const char* query_string,
-                               size_t query_length,
-                               size_t substr_len, 
-                               size_t** forward_table,
-                               size_t** reverse_table,
-                               SUFFIX_TREE** stree);
+#define Index_T EquivClassIndex_T
+#define Table_T EquivClassTable_T
 
-int verify_equiv_class_tables(const char* query, size_t query_len, size_t substr_len,
-                              const size_t* forward_table, const size_t* reverse_table);
+typedef size_t Index_T;
+typedef struct Table_T* Table_T; 
 
+Table_T EquivClassTable_create(char*         query_string,
+                               Index_T       query_length,
+                               SUFFIX_TREE** suffix_tree,
+                               Index_T       substr_length);
+
+void    EquivClassTable_delete(Table_T* table);
+
+Index_T EquivClassTable_forward_lookup(Table_T table, size_t query_string_pos);
+
+Index_T EquivClassTable_reverse_lookup(Table_T table, size_t query_string_pos);
+
+Index_T EquivClassTable_num_classes(Table_T table);
+
+int     EquivClassTable_verify(char* query_string,
+                               Index_T query_length,
+                               Table_T table,
+                               Index_T substr_length);
+
+#undef Index_T
+#undef Table_T
 #endif

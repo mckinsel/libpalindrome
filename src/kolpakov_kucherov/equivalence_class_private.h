@@ -3,6 +3,9 @@
 
 #include "equivalence_class.h"
 
+#define Index_T EquivClassIndex_T
+#define Table_T EquivClassTable_T
+
 void annotate_substr_classes_dfs(const SUFFIX_TREE* stree,
                                  const NODE* node,
                                  size_t* substr_classes,
@@ -16,4 +19,12 @@ size_t* annotate_substr_classes(size_t str_len, size_t substr_len,
 int verify_substr_classes(const char* str, size_t str_len, size_t substr_len,
                           const size_t* substr_classes);
 
+struct Table_T {
+  Index_T* forward_classes;
+  Index_T* reverse_classes;
+  size_t   query_length;
+};
+
+#undef Index_T
+#undef Table_T
 #endif

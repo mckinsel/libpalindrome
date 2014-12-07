@@ -27,30 +27,36 @@ void length_constrained_palindromes(char* query_string, size_t query_length,
                                     size_t min_arm_length, size_t min_gap_length,
                                     size_t max_gap_length)
 {
-  size_t* forward_table = NULL;
-  size_t* reverse_table = NULL;
+  //size_t* forward_table = NULL;
+  //size_t* reverse_table = NULL;
   SUFFIX_TREE* stree = NULL;
+  EquivClassTable_T eq_table = EquivClassTable_create(query_string, query_length,
+                                                      &stree, min_arm_length);
   
   /* First thing is to find the equivalence classes for each substring of
    * length min_arm_length. */
-  create_equiv_class_tables(query_string, query_length, min_arm_length,
-                            &forward_table, &reverse_table, &stree);
+  //create_equiv_class_tables(query_string, query_length, min_arm_length,
+  //                          &forward_table, &reverse_table, &stree);
  
-  size_t num_classes = MAX(count_equiv_classes(forward_table, query_length + 1),
-                           count_equiv_classes(reverse_table, query_length + 1));
+  //size_t num_classes = MAX(count_equiv_classes(forward_table, query_length + 1),
+  //                         count_equiv_classes(reverse_table, query_length + 1));
+  EquivClassIndex_T num_classes = EquivClassTable_num_classes(eq_table);
 
   EquivClassArray_T eq_array = EquivClassArray_create(num_classes); 
 
   size_t j = 0;
   for(j = 0; j < query_length; j++) {
 
-    size_t left_class = reverse_table[j];
+    //size_t left_class = reverse_table[j];
+    EquivClassIndex_T left_class = EquivClassTable_reverse_lookup(eq_table, j);
+
     /* We can continue if we're not past min_arm_length yet. */
     if(left_class == 0) continue;
     
     eq_array = EquivClassArray_add(eq_array, left_class, j, query_string);
 
-    size_t right_class = forward_table[j];
+    //size_t right_class = forward_table[j];
+    EquivClassIndex_T right_class = EquivClassTable_forward_lookup(eq_table, j);
 
     EquivClassItem_T search_item =
         EquivClassArray_get_previous_start_item(eq_array, right_class);
@@ -84,8 +90,9 @@ void length_constrained_palindromes(char* query_string, size_t query_length,
   }
 
   EquivClassArray_delete(&eq_array);
-  free(forward_table);
-  free(reverse_table);
+  //free(forward_table);
+  //free(reverse_table);
+  EquivClassTable_delete(&eq_table);
   ST_DeleteTree(stree);
 
 }

@@ -2,6 +2,8 @@
 #include "dbg.h"
 #include "kolpakov_kucherov/utils.h"
 
+#define Index_T EquivClassIndex_T
+#define Table_T EquivClassTable_T
 
 /*
  * Recursive function for depth-first traversal of suffix tree when creating
@@ -105,179 +107,6 @@ error:
   if(class_label) free(class_label);
   return NULL;
 }
-/*
- * Create the two equivalence class tables for a string and a given minimum
- * length, as described by Kolpakov and Kucherov.
- *
- * There are two, one for the forward direction, andi the other for the
- * reverse. For example, consider BANANA
- *
- *      B A N A N A   string
- *      0 1 2 3 4 5   index
- *
- * forward_table[i] returns the equivalence class for string[i:i+min_len],
- * and reverse_table[i] returns the equivalence class for
- * string[i-min_len:i][::-1], using Python slice syntax. So the correct values
- * for BANANA with min_len of 3 are
- *
- *  forward:              reverse:
- *    0   :   1 (BAN)            0   :   0
- *    1   :   2 (ANA)            1   :   0
- *    2   :   3 (NAN)            2   :   0
- *    3   :   2 (ANA)            3   :   7 (NAB)
- *    4   :   0                  4   :   2 (ANA)
- *    5   :   0                  5   :   3 (NAN)
- *    6   :   0                  6   :   2 (ANA)
- *
- * forward[1] refers to ANA in B[ANA]NA. reverse[4] refers to ANA in AN[ANA]B.
- * So, the have the same value. Note that zero is a special value indicating
- * that there is not valid substring in that direction at that position.
- *
- * Inputs:
- *    char* query_string      :   String in which equivalence classes will be
- *                                found
- *    size_t query_length     :   Length of query_string, not including null
- *                                terminator
- *    size_t substr_length    :   Length of substrings in the equivalence
- *                                classes
- *    size_t** forward_table  :   The RightClass table from the paper
- *    size_t** reverse_table  :   The LeftClass table from the paper
- *    SUFFIX_TREE** stree     :   Suffix tree of query_string
- *
- * Outputs:
- *    None, but allocates forward_table, reverse_table, and stree. So caller is
- *    responsible for freeing.
- *
- */
-void create_equiv_class_tables(const char* query_string,
-                               size_t query_length,
-                               size_t substr_len, 
-                               size_t** forward_table,
-                               size_t** reverse_table,
-                               SUFFIX_TREE** stree)
-{
-  char* query_plus_reverse = append_reverse(query_string, query_length);
-  size_t qpr_length = QPR_LENGTH(query_length);
-  *stree = ST_CreateTree(query_plus_reverse, qpr_length);
-  size_t* substr_classes = annotate_substr_classes(qpr_length, substr_len,
-                                                   *stree);
-  *forward_table = calloc(query_length + 1, sizeof(size_t));
-  *reverse_table = calloc(query_length + 1, sizeof(size_t));
-
-  memcpy(*forward_table, substr_classes,
-         sizeof(size_t)*(query_length - substr_len + 1));
-
-  size_t i = 0;
-  for(i = 0; i < query_length - substr_len + 1; i++) {
-    (*reverse_table)[query_length - i] = substr_classes[query_length + i + 1];
-  }
-  
-  free(query_plus_reverse);
-  free(substr_classes);
-}
-
-int verify_equiv_class_tables(const char* query, size_t query_len, size_t substr_len,
-                              const size_t* forward_table, const size_t* reverse_table)
-{
-  size_t table_len = query_len + 1;
-  size_t i = 0, j = 0, k = 0;
-
-
-  int same_id = 0, same_substr = 0;
-  
-  /* Compare forward against forward */
-  for(i = 0; i < table_len; i++) {
-    if(i > query_len - substr_len) {
-      if(forward_table[i] != 0) {
-        log_warn("Invalid substring given non-zero equivalence class.");
-        return 1;
-      }
-      continue;
-    }
-    for(j = i; j < table_len; j++) {
-      same_substr = strncmp(query + i, query + j, substr_len) ? 1 : 0;
-      same_id = forward_table[i] == forward_table[j] ? 0 : 1;
-      if(same_substr != same_id) {
-        log_warn("Comparing positions %zd and %zd in the forward_table: "
-                 "same_substr is %d, but same_id is %d",
-                 i, j, same_substr, same_id);
-        return 1;
-      }
-    }
-  }
-
-  /* Compare forward against reverse. i indexes forward, j indexes reverse */
-  for(i = 0; i < table_len; i++) {
-
-    if(i > query_len - substr_len) {
-      if(forward_table[i] != 0) {
-        log_warn("Invalid substring given non-zero equivalence class.");
-        return 1;
-      }
-      continue;
-    }
-
-    for(j = 0; j < table_len; j++) {
-
-      if(j < substr_len) {
-        if(reverse_table[j] != 0) {
-          log_warn("Invalid substring given non-zero equivalence class.");
-          return 1;
-        }
-        continue;
-      }
-      
-      same_substr = 0;
-      for(k = 0; k < substr_len; k++) {
-        if(query[i + k] != query[j - 1 - k]) {
-          same_substr = 1;
-          break;
-        }
-      }
-      same_id = forward_table[i] == reverse_table[j] ? 0 : 1;
-      if(same_substr != same_id) {
-        log_warn("Comparing positions %zd and %zd in the forward and reverse table: "
-                 "same_substr is %d, but same_id is %d",
-                 i, j, same_substr, same_id);
-        return 1;
-      }
-    }
-  }
-
-  /* Compare reverse against reverse */
-  for(i = 0; i < table_len; i++) {
-
-    if(i < substr_len) {
-      if(reverse_table[i] != 0) {
-        log_warn("Invalid substring given non-zero equivalence class.");
-        return 1;
-      }
-      continue;
-    }
-
-    for(j = i; j < table_len; j++) {
-      same_substr = 0;
-      for(k = 0; k < substr_len; k++) {
-        if(query[i - 1 -k] != query[j - 1 - k]) {
-          same_substr = 1;
-          break;
-        }
-      }
-
-      same_id = reverse_table[i] == reverse_table[j] ? 0 : 1;
-      if(same_substr != same_id) {
-        log_warn("Comparing positions %zd and %zd in the reverse table: "
-                 "same_substr is %d, but same_id is %d",
-                 i, j, same_substr, same_id);
-        return 1;
-      }
-    }
-  }
-
-  return 0;
-
-}    
-
 
 /*
  * Test the substring classes found by annotate_substr_classes. Check that
@@ -330,3 +159,248 @@ int verify_substr_classes(const char* str, size_t str_len, size_t substr_len,
 
   return 0;
 }
+
+struct Table_T {
+  Index_T* forward_classes;
+  Index_T* reverse_classes;
+  size_t   query_length;
+};
+
+/*
+ * Create the two equivalence class tables for a string and a given minimum
+ * length, as described by Kolpakov and Kucherov.
+ *
+ * There are two, one for the forward direction, andi the other for the
+ * reverse. For example, consider BANANA
+ *
+ *      B A N A N A   string
+ *      0 1 2 3 4 5   index
+ *
+ * forward_table[i] returns the equivalence class for string[i:i+min_len],
+ * and reverse_table[i] returns the equivalence class for
+ * string[i-min_len:i][::-1], using Python slice syntax. So the correct values
+ * for BANANA with min_len of 3 are
+ *
+ *  forward:              reverse:
+ *    0   :   1 (BAN)            0   :   0
+ *    1   :   2 (ANA)            1   :   0
+ *    2   :   3 (NAN)            2   :   0
+ *    3   :   2 (ANA)            3   :   7 (NAB)
+ *    4   :   0                  4   :   2 (ANA)
+ *    5   :   0                  5   :   3 (NAN)
+ *    6   :   0                  6   :   2 (ANA)
+ *
+ * forward[1] refers to ANA in B[ANA]NA. reverse[4] refers to ANA in AN[ANA]B.
+ * So, the have the same value. Note that zero is a special value indicating
+ * that there is not valid substring in that direction at that position.
+ *
+ * Inputs:
+ *    char* query_string      :   String in which equivalence classes will be
+ *                                found
+ *    size_t query_length     :   Length of query_string, not including null
+ *                                terminator
+ *    size_t substr_length    :   Length of substrings in the equivalence
+ *                                classes
+ *    size_t** forward_table  :   The RightClass table from the paper
+ *    size_t** reverse_table  :   The LeftClass table from the paper
+ *    SUFFIX_TREE** stree     :   Suffix tree of query_string
+ *
+ * Outputs:
+ *    None, but allocates forward_table, reverse_table, and stree. So caller is
+ *    responsible for freeing.
+ *
+ */
+
+Table_T EquivClassTable_create(char*         query_string,
+                               Index_T       query_length,
+                               SUFFIX_TREE** suffix_tree,
+                               Index_T       substr_length)
+{
+  Table_T table = calloc(1, sizeof(struct Table_T));
+  check_mem(table);
+  table->query_length = query_length;
+
+  char* query_plus_reverse = append_reverse(query_string, query_length);
+  size_t qpr_length = QPR_LENGTH(query_length);
+  *suffix_tree = ST_CreateTree(query_plus_reverse, qpr_length);
+  size_t* substr_classes = annotate_substr_classes(qpr_length, substr_length,
+                                                   *suffix_tree);
+
+
+  table->forward_classes = calloc(query_length + 1, sizeof(Index_T));
+  table->reverse_classes = calloc(query_length + 1, sizeof(Index_T));
+
+  memcpy(table->forward_classes, substr_classes,
+         sizeof(Index_T)*(query_length - substr_length + 1));
+
+  size_t i = 0;
+  for(i = 0; i < query_length - substr_length + 1; i++) {
+    (table->reverse_classes)[query_length - i] = substr_classes[query_length + i + 1];
+  }
+  
+  free(query_plus_reverse);
+  free(substr_classes);
+  
+  return table;
+
+error:
+  return NULL;
+}
+
+void EquivClassTable_delete(Table_T* table)
+{
+  check(*table, "Attempting to delete NULL EquivClassTable_T.");
+
+  if((*table)->forward_classes) free((*table)->forward_classes);
+  if((*table)->reverse_classes) free((*table)->reverse_classes);
+  free(*table);
+
+error:
+  return;
+
+}  
+
+Index_T EquivClassTable_forward_lookup(Table_T table, size_t query_string_pos)
+{
+  check(query_string_pos <= table->query_length,
+        "Forward lookup position exceeds length of query string");
+
+  return table->forward_classes[query_string_pos];
+
+error:
+  return (Index_T)-1;
+}
+
+Index_T EquivClassTable_reverse_lookup(Table_T table, size_t query_string_pos)
+{
+  check(query_string_pos <= table->query_length,
+        "Reverse lookup position exceeds length of query string");
+
+  return table->reverse_classes[query_string_pos];
+
+error:
+  return (Index_T)-1;
+}
+
+int     EquivClassTable_verify(char*   query_string,
+                               Index_T query_length,
+                               Table_T table,
+                               Index_T substr_length)
+{
+  size_t table_len = query_length + 1;
+  size_t i = 0, j = 0, k = 0;
+
+
+  int same_id = 0, same_substr = 0;
+  
+  /* Compare forward against forward */
+  for(i = 0; i < table_len; i++) {
+    if(i > query_length - substr_length) {
+      if(table->forward_classes[i] != 0) {
+        log_warn("Invalid substring given non-zero equivalence class.");
+        return 1;
+      }
+      continue;
+    }
+    for(j = i; j < table_len; j++) {
+      same_substr = strncmp(query_string + i, query_string + j, substr_length) ? 1 : 0;
+      same_id = table->forward_classes[i] == table->forward_classes[j] ? 0 : 1;
+      if(same_substr != same_id) {
+        log_warn("Comparing positions %zd and %zd in the forward_table: "
+                 "same_substr is %d, but same_id is %d",
+                 i, j, same_substr, same_id);
+        return 1;
+      }
+    }
+  }
+
+  /* Compare forward against reverse. i indexes forward, j indexes reverse */
+  for(i = 0; i < table_len; i++) {
+
+    if(i > query_length - substr_length) {
+      if(table->forward_classes[i] != 0) {
+        log_warn("Invalid substring given non-zero equivalence class.");
+        return 1;
+      }
+      continue;
+    }
+
+    for(j = 0; j < table_len; j++) {
+
+      if(j < substr_length) {
+        if(table->reverse_classes[j] != 0) {
+          log_warn("Invalid substring given non-zero equivalence class.");
+          return 1;
+        }
+        continue;
+      }
+      
+      same_substr = 0;
+      for(k = 0; k < substr_length; k++) {
+        if(query_string[i + k] != query_string[j - 1 - k]) {
+          same_substr = 1;
+          break;
+        }
+      }
+      same_id = table->forward_classes[i] == table->reverse_classes[j] ? 0 : 1;
+      if(same_substr != same_id) {
+        log_warn("Comparing positions %zd and %zd in the forward and reverse table: "
+                 "same_substr is %d, but same_id is %d",
+                 i, j, same_substr, same_id);
+        return 1;
+      }
+    }
+  }
+
+  /* Compare reverse against reverse */
+  for(i = 0; i < table_len; i++) {
+
+    if(i < substr_length) {
+      if(table->reverse_classes[i] != 0) {
+        log_warn("Invalid substring given non-zero equivalence class.");
+        return 1;
+      }
+      continue;
+    }
+
+    for(j = i; j < table_len; j++) {
+      same_substr = 0;
+      for(k = 0; k < substr_length; k++) {
+        if(query_string[i - 1 -k] != query_string[j - 1 - k]) {
+          same_substr = 1;
+          break;
+        }
+      }
+
+      same_id = table->reverse_classes[i] == table->reverse_classes[j] ? 0 : 1;
+      if(same_substr != same_id) {
+        log_warn("Comparing positions %zd and %zd in the reverse table: "
+                 "same_substr is %d, but same_id is %d",
+                 i, j, same_substr, same_id);
+        return 1;
+      }
+    }
+  }
+
+  return 0;
+}
+
+Index_T EquivClassTable_num_classes(Table_T table)
+{
+
+  Index_T max_value = 0;
+  size_t i = 0;
+  for(i = 0; i < table->query_length + 1; i++) {
+    if(table->forward_classes[i] > max_value) {
+      max_value = table->forward_classes[i];
+    }
+    if(table->reverse_classes[i] > max_value) {
+      max_value = table->reverse_classes[i];
+    }
+  }
+  return max_value;
+}
+
+
+#undef Index_T
+#undef Table_T
