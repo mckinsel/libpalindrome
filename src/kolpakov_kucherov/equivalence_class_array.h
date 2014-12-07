@@ -11,10 +11,10 @@
  * by Kolpakov and Kucherov.
  *
  * Members:
- *  size_t position     :   Index in the query_string
- *  Item_T* next_item   :   Pointer to the next item in this
+ *  size_t position    :   Index in the query_string
+ *  Item_T next_item   :   Pointer to the next item in this
  *                          equivalence class
- *  Item_T* next_run    :   Pointer to the next run, as defined in
+ *  Item_T next_run    :   Pointer to the next run, as defined in
  *                          the K&K paper.
  */
 typedef struct Item_T {
@@ -59,7 +59,8 @@ Array_T EquivClassArray_add(Array_T array, size_t equiv_class_index, size_t posi
                             char* query_string);
 
 /*
- * Set a new PreviousStartItem for an equivalence class.
+ * Set a new PreviousStartItem for an equivalence class. If item is NULL, log
+ * an error and leave the array unmodified.
  *
  * Params:
  *  EquivClassArray_T array     : The starting array, in which a PreviousStartItem
@@ -77,6 +78,10 @@ Array_T EquivClassArray_set_previous_start_item(Array_T array,
                                                 Item_T item);
 /*
  * Get the PreviousStartItem for an equivalence class.
+ * If no item for the equiv_class_index has been added to the array, return
+ * NULL and log an error. If set_previous_start_item has never been called
+ * for the equiv_class_index, return the first Item that was added for the
+ * index.
  *
  * Params:
  *  EquivClassArray_T array   :   The array containing the equivalence class
