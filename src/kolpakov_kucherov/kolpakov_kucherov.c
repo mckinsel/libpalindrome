@@ -8,38 +8,14 @@
 
 #include "dbg.h"
 
-#define MIN(A, B) ((A) < (B) ? A : B)
-#define MAX(A, B) ((A) > (B) ? A : B)
-
-size_t count_equiv_classes(const size_t* equiv_class_table, size_t table_size)
-{
-  size_t max_value = 0;
-  size_t i = 0;
-  for(i = 0; i < table_size; i++) {
-    if(equiv_class_table[i] > max_value) {
-      max_value = equiv_class_table[i];
-    }
-  }
-  return max_value;
-}
-
 void length_constrained_palindromes(char* query_string, size_t query_length,
                                     size_t min_arm_length, size_t min_gap_length,
                                     size_t max_gap_length)
 {
-  //size_t* forward_table = NULL;
-  //size_t* reverse_table = NULL;
-  SUFFIX_TREE* stree = NULL;
+  SuffixTree_T stree = NULL;
   EquivClassTable_T eq_table = EquivClassTable_create(query_string, query_length,
                                                       &stree, min_arm_length);
   
-  /* First thing is to find the equivalence classes for each substring of
-   * length min_arm_length. */
-  //create_equiv_class_tables(query_string, query_length, min_arm_length,
-  //                          &forward_table, &reverse_table, &stree);
- 
-  //size_t num_classes = MAX(count_equiv_classes(forward_table, query_length + 1),
-  //                         count_equiv_classes(reverse_table, query_length + 1));
   EquivClassIndex_T num_classes = EquivClassTable_num_classes(eq_table);
 
   EquivClassArray_T eq_array = EquivClassArray_create(num_classes); 
@@ -93,7 +69,7 @@ void length_constrained_palindromes(char* query_string, size_t query_length,
   //free(forward_table);
   //free(reverse_table);
   EquivClassTable_delete(&eq_table);
-  ST_DeleteTree(stree);
+  SuffixTree_delete(&stree);
 
 }
 
