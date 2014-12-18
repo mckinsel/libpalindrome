@@ -59,6 +59,9 @@ char* test_previous_start_items()
   EquivClassArray_set_previous_start_item(array, 2, item->next_item); 
   item = EquivClassArray_get_previous_start_item(array, 2);
   mu_assert(item->position == 3, "Incorrect position for PreviousStartItem.");
+
+  EquivClassArray_delete(&array);
+
   return NULL;
 }
 
