@@ -12,7 +12,7 @@ typedef struct {
   size_t num_nodes;
   
   /* The node ids as they're visited in the Euler tour. */
-  NODE** euler_tour_nodes;
+  Node_T* euler_tour_nodes;
 
   /* The depths of nodes as they are visited in an Euler tour of the tree. */
   size_t* euler_tour_depths;
@@ -39,20 +39,20 @@ typedef struct {
 
 } TreeLCA; 
 
-TreeLCA* TreeLCA_create(const SUFFIX_TREE* stree);
+TreeLCA* TreeLCA_create(const SuffixTree_T stree);
 void TreeLCA_delete(TreeLCA* tree_lca);
-NODE* TreeLCA_lookup(const TreeLCA* tree_lca, const NODE* node1, const NODE* node2);
-int TreeLCA_verify(const SUFFIX_TREE* stree, const TreeLCA* tree_lca);
+Node_T TreeLCA_lookup(const TreeLCA* tree_lca, const Node_T node1, const Node_T node2);
+int TreeLCA_verify(const SuffixTree_T stree, const TreeLCA* tree_lca);
 
 
-NODE** map_position_to_leaf(const SUFFIX_TREE* stree, size_t str_len);
+Node_T* map_position_to_leaf(const SuffixTree_T stree, size_t str_len);
 
-void map_position_to_leaf_dfs(const SUFFIX_TREE* stree,
-                              NODE* node,
-                              NODE** leaf_map,
+void map_position_to_leaf_dfs(const SuffixTree_T stree,
+                              Node_T node,
+                              Node_T* leaf_map,
                               size_t prev_suf_length);
 
-int verify_map_position_to_leaf(NODE** pos_to_leaf,
-                                const SUFFIX_TREE* stree,
+int verify_map_position_to_leaf(Node_T* pos_to_leaf,
+                                const SuffixTree_T stree,
                                 size_t query_len);
 #endif

@@ -25,11 +25,11 @@
 #define MAX(a,b) ((a) > (b) ? a : b)
 #define MIN(a,b) ((a) < (b) ? a : b)
 
-TreeLCA* TreeLCA_create(const SUFFIX_TREE* stree)
+TreeLCA* TreeLCA_create(const SuffixTree_T stree)
 {
   TreeLCA* tree_lca = malloc(sizeof(TreeLCA));
   check_mem(tree_lca);
-  tree_lca->num_nodes = stree->num_nodes;
+  tree_lca->num_nodes = SuffixTree_get_num_nodes(stree);
 
   /* First create the Euler tour */
   euler_tour_arrays_create(stree, &tree_lca->euler_tour_nodes,
@@ -41,7 +41,7 @@ TreeLCA* TreeLCA_create(const SUFFIX_TREE* stree)
         "Failed initialization of Euler tour depths.");
   check(tree_lca->node_id_pos_in_tour,
         "Failed initializtion of Euler tour first instances.")
-  tree_lca->euler_tour_length = 2 * stree->num_nodes - 1;
+  tree_lca->euler_tour_length = 2 * SuffixTree_get_num_nodes(stree) - 1;
 
   /* Then create the arrays for block minima. */
   tree_lca->num_blocks = get_block_minima(
@@ -81,10 +81,10 @@ void TreeLCA_delete(TreeLCA* tree_lca)
  }
 }
 
-NODE* TreeLCA_lookup(const TreeLCA* tree_lca, const NODE* node1, const NODE* node2)
+Node_T TreeLCA_lookup(const TreeLCA* tree_lca, const Node_T node1, const Node_T node2)
 {
-  size_t node_id1 = node1->index;
-  size_t node_id2 = node2->index;
+  size_t node_id1 = Node_get_index(node1);
+  size_t node_id2 = Node_get_index(node2);
   /* First, we find a position of each requested node in the Euler tour arrays. */
   size_t tour_pos_1 = tree_lca->node_id_pos_in_tour[node_id1];
   size_t tour_pos_2 = tree_lca->node_id_pos_in_tour[node_id2];
@@ -191,34 +191,34 @@ NODE* TreeLCA_lookup(const TreeLCA* tree_lca, const NODE* node1, const NODE* nod
  * them against the naive n^2 algorithm.
  *
  * Inputs:
- *  SUFFIX_TREE* stree    :   Suffix tree in which we want to find LCAs
+ *  SuffixTree_T stree    :   Suffix tree in which we want to find LCAs
  *  TreeLCA*  tree_lca    :   Struct used for constant time LCA lookups
  *
  * Output:
  *  0 if tests pass, else 1.
  */
-int TreeLCA_verify(const SUFFIX_TREE* stree, const TreeLCA* tree_lca)
+int TreeLCA_verify(const SuffixTree_T stree, const TreeLCA* tree_lca)
 {
-  NODE** node_array = ST_CreateNodeArray(stree);
+  Node_T* node_array = SuffixTree_create_node_array(stree);
   
   /* Iterate over all possible node pairs. */
   size_t i = 0;
   size_t j = 0;
   for(i = 0; i < tree_lca->num_nodes; i++) {
     for(j = 0; j < tree_lca->num_nodes; j++) {
-      NODE* node1 = node_array[i];
-      NODE* node2 = node_array[j];
+      Node_T node1 = node_array[i];
+      Node_T node2 = node_array[j];
       
       /* First get the LCA node using the constant time algorithm. */
-      NODE* obs_node = TreeLCA_lookup(tree_lca, node1, node2);
-      NODE* exp_node = NULL;
+      Node_T obs_node = TreeLCA_lookup(tree_lca, node1, node2);
+      Node_T exp_node = NULL;
 
       /* Then get the LCA node by tracing from each node back to the root. */
-      NODE** node1_to_root = calloc(20, sizeof(NODE*));
+      Node_T* node1_to_root = calloc(20, sizeof(Node_T));
       size_t node1_to_root_size = 20;
       size_t node1_to_root_i = 0;
 
-      NODE* next_node = node1;
+      Node_T next_node = node1;
       while(next_node != 0) {
         node1_to_root[node1_to_root_i] = next_node;
         node1_to_root_i++;
@@ -227,7 +227,7 @@ int TreeLCA_verify(const SUFFIX_TREE* stree, const TreeLCA* tree_lca)
                                   (20 + node1_to_root_size) * sizeof(size_t));
           node1_to_root_size += 20;
         }
-        next_node = next_node->father;
+        next_node = Node_get_parent(next_node);
       }
       
       next_node = node2;
@@ -239,12 +239,12 @@ int TreeLCA_verify(const SUFFIX_TREE* stree, const TreeLCA* tree_lca)
             break;
           }
         }
-        next_node = next_node->father;
+        next_node = Node_get_parent(next_node);
       }
 
       if(obs_node != exp_node) {
         log_warn("Got incorrect LCA. Should get node %zu but got node %zu.",
-                 exp_node->index, obs_node->index);
+                 Node_get_index(exp_node), Node_get_index(obs_node));
         free(node1_to_root);
         return 1;
       }
@@ -261,25 +261,26 @@ int TreeLCA_verify(const SUFFIX_TREE* stree, const TreeLCA* tree_lca)
  * additional '$' char at the end that wasn't in the original string.
  *
  * Inputs:
- *    SUFFIX_TREE* stree    :   suffix tree build from string
+ *    SuffixTree_T stree    :   suffix tree build from string
  *    size_t str_len        :   length of the string
  *
  * Outputs:
- *    NODE** leaf_map   :   an array such that leaf_map[i] is a pointer to the
+ *    Node_T* leaf_map   :   an array such that leaf_map[i] is a pointer to the
  *                          leaf of stree for the suffix starting at position
  *                          i in the string
  * 
  * The caller is responsible for freeing leaf_map.
  */
-NODE** map_position_to_leaf(const SUFFIX_TREE* stree, size_t str_len)
+Node_T* map_position_to_leaf(const SuffixTree_T stree, size_t str_len)
 {
-  NODE** leaf_map = calloc(str_len, sizeof(NODE*));
+  Node_T* leaf_map = calloc(str_len, sizeof(Node_T));
   check_mem(leaf_map);
-
-  NODE* child = stree->root->sons;
+  
+  Node_T root = SuffixTree_get_root(stree);
+  Node_T child = Node_get_child(root);
   while(child != 0) {
     map_position_to_leaf_dfs(stree, child, leaf_map, 0);
-    child = child->right_sibling;
+    child = Node_get_sibling(child);
   }
   return leaf_map;
 
@@ -293,36 +294,37 @@ error:
  * depth first and writes values into leaf_map.
  *
  * Inputs:
- *  SUFFIX_TREE* stree    :   Suffix tree of the string
- *  NODE* node            :   Current node in stree in the DFS
- *  NODE** leaf_map       :   The array of string indices to leaf pointers
+ *  SuffixTree_T stree    :   Suffix tree of the string
+ *  Node_T node            :   Current node in stree in the DFS
+ *  Node_T* leaf_map       :   The array of string indices to leaf pointers
  *  size_t prev_suf_length:   The length of suffixes from node to the root
  *
  * Outputs:
  *  None, but modifies leaf_map;
  */
-void map_position_to_leaf_dfs(const SUFFIX_TREE* stree,
-                              NODE* node,
-                              NODE** leaf_map,
+void map_position_to_leaf_dfs(const SuffixTree_T stree,
+                              Node_T node,
+                              Node_T* leaf_map,
                               size_t prev_suf_length)
 {
-  size_t edge_start = node->edge_label_start;
-  size_t edge_end = get_node_label_end(stree, node);
+  size_t edge_start = Node_get_edge_start(node, stree);
+  size_t edge_end = Node_get_edge_end(node, stree);
   size_t current_suf_length = prev_suf_length + edge_end - edge_start + 1;
   
-  if(edge_end == stree->e) {
-    size_t suffix_start = stree->e - current_suf_length;
-    if(suffix_start + 1 != stree->e) {
+  SuffixTreeIndex_T tree_end = SuffixTree_get_end(stree); 
+  if(edge_end == tree_end) {
+    size_t suffix_start = tree_end - current_suf_length;
+    if(suffix_start + 1 != tree_end) {
       leaf_map[suffix_start] = node;
     }
     return;
   }
 
-  NODE* next_node = node->sons;
+  Node_T next_node = Node_get_child(node);
   while(next_node != 0) {
     map_position_to_leaf_dfs(stree, next_node, leaf_map,
                              current_suf_length);
-    next_node = next_node->right_sibling;
+    next_node = Node_get_sibling(next_node);
   }
 }
 
@@ -331,15 +333,15 @@ void map_position_to_leaf_dfs(const SUFFIX_TREE* stree,
  * leaves.
  *
  * Inputs:
- *    NODE** pos_to_leaf    :   Array from string position to stree leaf
- *    SUFFIX_TREE* stree    :   The suffix tree
+ *    Node_T* pos_to_leaf    :   Array from string position to stree leaf
+ *    SuffixTree_T stree    :   The suffix tree
  *    size_t query_len      :   Length of the string
  *
  * Outputs:
  *    0 if pos_to_leaf is correct, otherwise 1
  */
-int verify_map_position_to_leaf(NODE** pos_to_leaf,
-                                const SUFFIX_TREE* stree,
+int verify_map_position_to_leaf(Node_T* pos_to_leaf,
+                                const SuffixTree_T stree,
                                 size_t query_len)
 {
   size_t i = 0;
@@ -349,14 +351,14 @@ int verify_map_position_to_leaf(NODE** pos_to_leaf,
 
   for(i = 0; i < query_len; i++) {
 
-    const NODE* node = pos_to_leaf[i];
+    Node_T node = pos_to_leaf[i];
     suffix_depth = 0;
-    while(node->father != 0) {
-      incoming_start = node->edge_label_start;
-      incoming_end = get_node_label_end(stree, node);
+    while(Node_get_parent(node) != 0) {
+      incoming_start = Node_get_edge_start(node, stree);
+      incoming_end = Node_get_edge_end(node, stree);
       /* Stop when we reach the edge to the root */
       suffix_depth += incoming_end - incoming_start + 1;
-      node = node->father;
+      node = Node_get_parent(node);
     }
 
     if(i != query_len - (suffix_depth - 1)) {

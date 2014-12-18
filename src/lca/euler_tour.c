@@ -16,7 +16,7 @@
  * described in the paper above.
  *
  * Inputs:
- *  SUFFIX_TREE* stree        :   Suffix tree on which we want to perform LCA
+ *  SuffixTree_T stree        :   Suffix tree on which we want to perform LCA
  *  size_t** tour             :   Node ids as visited in the tour
  *  size_t** depths           :   Depth array
  *  size_t** first_intances   :   First instance array
@@ -25,20 +25,22 @@
  *  None, but depths and first_instances are allocated, and the caller is
  *  responsible for freeing.
  */
-void euler_tour_arrays_create(const SUFFIX_TREE* stree,
-                              NODE*** tour,
+void euler_tour_arrays_create(const SuffixTree_T stree,
+                              Node_T** tour,
                               size_t** depths,
                               size_t** first_instances)
 {
   /* The length of the Euler tour */
-  size_t array_size = 2 * stree->num_nodes - 1;
+  SuffixTreeIndex_T num_nodes = SuffixTree_get_num_nodes(stree);
+  size_t array_size = 2 * num_nodes - 1;
   
-  *tour = calloc(array_size, sizeof(NODE*));
+  *tour = calloc(array_size, sizeof(Node_T));
   *depths = calloc(array_size, sizeof(size_t));
-  *first_instances = calloc(stree->num_nodes, sizeof(size_t));
+  *first_instances = calloc(num_nodes, sizeof(size_t));
   
   size_t* pos_in_tour = calloc(1, sizeof(size_t));
-  euler_tour(stree->root, 0, pos_in_tour, *tour, *depths, *first_instances);
+  euler_tour(SuffixTree_get_root(stree), 0, pos_in_tour, *tour,
+             *depths, *first_instances);
 
   free(pos_in_tour);
 }
@@ -58,15 +60,15 @@ void euler_tour_arrays_create(const SUFFIX_TREE* stree,
  * Outputs:
  *  None, but populates depths and first_instances.
  */
-void euler_tour(NODE* node, size_t depth, size_t* pos_in_tour,
-                NODE** tour, size_t* depths, size_t* first_instances)
+void euler_tour(Node_T node, size_t depth, size_t* pos_in_tour,
+                Node_T* tour, size_t* depths, size_t* first_instances)
 {
-  NODE* next_node = node->sons;
+  Node_T next_node = Node_get_child(node);
   
   tour[*pos_in_tour] = node;
   depths[*pos_in_tour] = depth;
-  if(first_instances[node->index] == 0) {
-    first_instances[node->index] = *pos_in_tour;
+  if(first_instances[Node_get_index(node)] == 0) {
+    first_instances[Node_get_index(node)] = *pos_in_tour;
   }
   (*pos_in_tour)++;
     
@@ -77,23 +79,24 @@ void euler_tour(NODE* node, size_t depth, size_t* pos_in_tour,
       tour[*pos_in_tour] = node;
       depths[*pos_in_tour] = depth;
       (*pos_in_tour)++;
-      next_node = next_node->right_sibling;
+      next_node = Node_get_sibling(next_node);
     }
-    
   }
-
 }
 
 /*
  * Test the depth and first_instance arrays. Return 0 if tests pass, else 1.
  */
-int verify_rmq_arrays(const SUFFIX_TREE* stree, NODE** tour,
+int verify_rmq_arrays(const SuffixTree_T stree, Node_T* tour,
                       const size_t* depths,
                       const size_t* first_instances)
 {
   /* First verify that the depths array has the +-1 property */
   size_t i = 0;
-  for(i = 0; i < 2 * stree->num_nodes - 2; i++) { /* Note - 2 not - 1 */
+  SuffixTreeIndex_T num_nodes = SuffixTree_get_num_nodes(stree);
+  Node_T root = SuffixTree_get_root(stree);
+
+  for(i = 0; i < 2 * num_nodes - 2; i++) { /* Note - 2 not - 1 */
     long int diff = depths[i] - depths[i + 1];
     
     if(!labs(diff) == 1) {
@@ -106,21 +109,21 @@ int verify_rmq_arrays(const SUFFIX_TREE* stree, NODE** tour,
    * be the root. And, for A, B, C in the tour, if A == C, then B is a leaf in
    * the tree, and the number of leaves is the lenght of the suffix tree
    * string. */
-  if(tour[0] != stree->root) {
+  if(tour[0] != root) {
     log_warn("First element in tour is not the root.");
     return 1;
   }
-  if(tour[2 * stree->num_nodes - 2] != stree->root) {
+  if(tour[2 * num_nodes - 2] != root) {
     log_warn("Last element in tour is not the root.");
     return 1;
   }
   size_t leaf_count = 0;
-  for(i = 0; i < 2 * stree->num_nodes - 3; i++) {
+  for(i = 0; i < 2 * num_nodes - 3; i++) {
     if(tour[i] == tour[i+2]) leaf_count++;
   }
-  if(leaf_count != stree->length) {
+  if(leaf_count != SuffixTree_get_string_length(stree)) {
     log_warn("Number of leaves in tour, %zu, is not the length of the string, %zu",
-            leaf_count, stree->length);
+            leaf_count, SuffixTree_get_string_length(stree));
     return 1;
   }
 
@@ -128,7 +131,7 @@ int verify_rmq_arrays(const SUFFIX_TREE* stree, NODE** tour,
    * necessarily have to be true, but since we assign labels in the order that
    * we visit nodes in the same depth-first traversal, it should be true for
    * us. */
-  for(i = 0; i < stree->num_nodes - 1; i++) {
+  for(i = 0; i < num_nodes - 1; i++) {
     if(first_instances[i+1] <= first_instances[i]){
       log_warn("First instances is not increasing.");
       return 1;
