@@ -11,12 +11,12 @@ char* test_random_strings()
 
   for(i = 0; i < 5; i++) {
     random_string(str, str_len);
-    SUFFIX_TREE* stree = ST_CreateTree(str, str_len);
-    DBL_WORD rc = ST_SelfTest(stree);
+    SuffixTree_T stree = SuffixTree_create(str, str_len);
+    int rc = SuffixTree_verify(stree);
 
     mu_assert(rc == 1, "Suffix tree failed self test.");
 
-    ST_DeleteTree(stree);
+    SuffixTree_delete(&stree);
   }
 
   free(str);
@@ -30,19 +30,19 @@ char* test_print_stree()
   char str[] = "BANANA";
   size_t str_len = sizeof(str) - 1;
 
-  SUFFIX_TREE* stree = ST_CreateTree(str, str_len);
+  SuffixTree_T stree = SuffixTree_create(str, str_len);
   printf("\nSuffix tree for BANANA:");
-  ST_PrintTree(stree);
+  SuffixTree_print(stree);
     
-  ST_DeleteTree(stree);    
+  SuffixTree_delete(&stree);
 
   return NULL;
 }
 
 /* Helper function for testing node indices. */
-int label_test_dfs(const NODE* node, DBL_WORD** label_record, DBL_WORD num_nodes)
+int label_test_dfs(Node_T node, SuffixTreeIndex_T** label_record, SuffixTreeIndex_T num_nodes)
 {
-  DBL_WORD index = node->index;
+  SuffixTreeIndex_T index = Node_get_index(node);
 
   if(index >= num_nodes) {
     log_warn("Node has index value greater than the number of nodes.");
@@ -56,14 +56,14 @@ int label_test_dfs(const NODE* node, DBL_WORD** label_record, DBL_WORD num_nodes
 
   (*label_record)[index] = 1;
 
-  NODE* next_node = node->sons;
+  Node_T next_node = Node_get_child(node);
   int ret = 0;
   while(next_node != 0) {
     ret = label_test_dfs(next_node, label_record, num_nodes);
 
     if(ret != 0) return ret;
 
-    next_node = next_node->right_sibling;
+    next_node = Node_get_sibling(next_node);
   }
 
   return 0;
@@ -75,19 +75,20 @@ char* test_node_labels_banana()
   char str[] = "BANANA";
   size_t str_len = sizeof(str) - 1;
 
-  SUFFIX_TREE* stree = ST_CreateTree(str, str_len);
-  DBL_WORD* label_record = calloc(stree->num_nodes, sizeof(DBL_WORD));
+  SuffixTree_T stree = SuffixTree_create(str, str_len);
+  SuffixTreeIndex_T num_nodes = SuffixTree_get_num_nodes(stree);
+  SuffixTreeIndex_T* label_record = calloc(num_nodes, sizeof(SuffixTreeIndex_T));
 
-  int ret = label_test_dfs(stree->root, &label_record, stree->num_nodes);
+  int ret = label_test_dfs(SuffixTree_get_root(stree), &label_record, num_nodes);
 
   mu_assert(ret == 0, "Failed node index verfication for BANANA.");
-  DBL_WORD i = 0;
-  for(i = 0; i < stree->num_nodes; i++) {
+  SuffixTreeIndex_T i = 0;
+  for(i = 0; i < num_nodes; i++) {
     mu_assert(label_record[i] == 1, "Node index not visited during tour.");
   }
   
   free(label_record);
-  ST_DeleteTree(stree);
+  SuffixTree_delete(&stree);
 
   return  NULL;
 }
@@ -101,19 +102,20 @@ char* test_node_labels_random()
 
   for(i = 0; i < 5; i++) {
     random_string(str, str_len);
-    SUFFIX_TREE* stree = ST_CreateTree(str, str_len);
-    DBL_WORD* label_record = calloc(stree->num_nodes, sizeof(DBL_WORD));
+    SuffixTree_T stree = SuffixTree_create(str, str_len);
+    SuffixTreeIndex_T num_nodes = SuffixTree_get_num_nodes(stree);
+    SuffixTreeIndex_T* label_record = calloc(num_nodes, sizeof(SuffixTreeIndex_T));
 
-    int ret = label_test_dfs(stree->root, &label_record, stree->num_nodes);
+    int ret = label_test_dfs(SuffixTree_get_root(stree), &label_record, num_nodes);
 
     mu_assert(ret == 0, "Failed node index verfication for random string.");
-    DBL_WORD i = 0;
-    for(i = 0; i < stree->num_nodes; i++) {
+    SuffixTreeIndex_T i = 0;
+    for(i = 0; i < num_nodes; i++) {
       mu_assert(label_record[i] == 1, "Node index not visited during tour.");
     }
     
     free(label_record);
-    ST_DeleteTree(stree);
+    SuffixTree_delete(&stree);
   }
 
   free(str);
@@ -129,16 +131,17 @@ char* test_node_array()
 
   for(i = 0; i < 5; i++) {
     random_string(str, str_len);
-    SUFFIX_TREE* stree = ST_CreateTree(str, str_len);
+    SuffixTree_T stree = SuffixTree_create(str, str_len);
+    SuffixTreeIndex_T num_nodes = SuffixTree_get_num_nodes(stree);
     
-    NODE** node_array = ST_CreateNodeArray(stree);
+    Node_T* node_array = SuffixTree_create_node_array(stree);
 
     size_t j = 0;
-    for(j = 0; j < stree->num_nodes; j++) {
-      mu_assert(node_array[i]->index == i, "Incorrect node array assignment.");
+    for(j = 0; j < num_nodes; j++) {
+      mu_assert(Node_get_index(node_array[i]) == i, "Incorrect node array assignment.");
     }
     free(node_array);
-    ST_DeleteTree(stree);
+    SuffixTree_delete(&stree);
   }
   
   free(str);
@@ -149,8 +152,8 @@ char* all_tests()
 {
   mu_suite_start();
   
-  mu_run_test(test_random_strings);
   mu_run_test(test_print_stree);
+  mu_run_test(test_random_strings);
   mu_run_test(test_node_labels_banana);
   mu_run_test(test_node_labels_random);
   mu_run_test(test_node_array);

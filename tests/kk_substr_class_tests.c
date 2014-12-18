@@ -10,7 +10,7 @@ char* test_substr_class_mississippi()
 {
   char str[] = "MISSISSIPPI";
   size_t str_len = sizeof(str) - 1;
-  SUFFIX_TREE* stree = ST_CreateTree(str, str_len); 
+  SuffixTree_T stree = SuffixTree_create(str, str_len);
   size_t* substr_classes = annotate_substr_classes(str_len, 3, stree); 
   
   mu_assert(substr_classes[1] == substr_classes[4],
@@ -23,7 +23,7 @@ char* test_substr_class_mississippi()
   int ret = verify_substr_classes(str, str_len, 3, substr_classes);
   mu_assert(ret == 0, "Verification of MISSISSIPPI substring classes failed.");
 
-  ST_DeleteTree(stree);
+  SuffixTree_delete(&stree);
   free(substr_classes);
   return NULL;
 }
@@ -42,14 +42,14 @@ char* test_random_strings()
   int ret = 0;
   for(i = 0; i < 10; i++) {
     random_string(str, str_len);
-    SUFFIX_TREE* stree = ST_CreateTree(str, str_len);
+    SuffixTree_T stree = SuffixTree_create(str, str_len);
     substr_len = rand() % 100;
     size_t* substr_classes = annotate_substr_classes(str_len, substr_len, stree);
 
     ret = verify_substr_classes(str, str_len, substr_len, substr_classes);
     mu_assert(ret == 0, "Verification of random string substring classes failed.");
 
-    ST_DeleteTree(stree);
+    SuffixTree_delete(&stree);
     free(substr_classes);
   }
   free(str);
@@ -65,7 +65,7 @@ char* test_substr_class_verification()
 {
   char str[] = "BANANA";
   size_t str_len = sizeof(str) - 1;
-  SUFFIX_TREE* stree = ST_CreateTree(str, str_len); 
+  SuffixTree_T stree = SuffixTree_create(str, str_len);
   size_t* substr_classes = annotate_substr_classes(str_len, 3, stree);
   
   /* Should be something like
@@ -117,7 +117,7 @@ char* test_substr_class_verification()
   ret = verify_substr_classes(str, str_len, 3, bad_classes);
   mu_assert(ret == 1, "Verification marked incorrect substring classes as correct.");
   
-  ST_DeleteTree(stree);
+  SuffixTree_delete(&stree);
   free(substr_classes);
   free(bad_classes);
 

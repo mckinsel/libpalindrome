@@ -20,7 +20,7 @@
  */
 char* test_banana()
 {
-  SUFFIX_TREE* stree = NULL;
+  SuffixTree_T stree = NULL;
 
   char str[] = "BANANA";
   size_t  str_len = sizeof(str) - 1;
@@ -29,7 +29,7 @@ char* test_banana()
   EquivClassTable_T eq_table = EquivClassTable_create(str, str_len, &stree, substr_len);
   
   mu_assert(EquivClassTable_forward_lookup(eq_table, 1) ==
-              EquivClassTable_forward_lookup(eq_table, 3),
+            EquivClassTable_forward_lookup(eq_table, 3),
             "Failed to assign same eq class id to all the ANA substrings.");
   mu_assert(EquivClassTable_forward_lookup(eq_table, 3) ==
               EquivClassTable_reverse_lookup(eq_table, 4),
@@ -60,14 +60,14 @@ char* test_banana()
   mu_assert(rc == 0, "Failed equivalence class verification.");
 
   EquivClassTable_delete(&eq_table);
-  ST_DeleteTree(stree);
+  SuffixTree_delete(&stree);
 
   return NULL;
 }
 
 char* test_eq_class_verification()
 {
-  SUFFIX_TREE* stree = NULL;
+  SuffixTree_T stree = NULL;
 
   char str[] = "BANANA";
   size_t  str_len = sizeof(str) - 1;
@@ -96,7 +96,7 @@ char* test_eq_class_verification()
   EquivClassTable_delete(&eq_table);
   free(good_forward);
   free(good_reverse);
-  ST_DeleteTree(stree); 
+  SuffixTree_delete(&stree);
 
   return NULL;
 }
@@ -107,7 +107,7 @@ char* test_random_strings()
   char* str = calloc((str_len + 1), sizeof(char));
   size_t substr_len;
 
-  SUFFIX_TREE* stree = NULL;
+  SuffixTree_T stree = NULL;
   EquivClassTable_T eq_table = NULL;
 
   int ret = 0;
@@ -123,7 +123,7 @@ char* test_random_strings()
     mu_assert(ret == 0, "Failed equivalence class verification.");
 
     EquivClassTable_delete(&eq_table);
-    ST_DeleteTree(stree);
+    SuffixTree_delete(&stree);
   }
   
   free(str);

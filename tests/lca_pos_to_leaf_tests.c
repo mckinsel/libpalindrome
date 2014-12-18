@@ -8,14 +8,14 @@ char* test_mississippi()
   char str[] = "MISSISSIPPI";
   size_t str_len = sizeof(str) - 1;
 
-  SUFFIX_TREE* stree = ST_CreateTree(str, str_len);
-  NODE** pos_to_leaf = map_position_to_leaf(stree, str_len);
+  SuffixTree_T stree = SuffixTree_create(str, str_len);
+  Node_T* pos_to_leaf = map_position_to_leaf(stree, str_len);
   
   int ret = verify_map_position_to_leaf(pos_to_leaf, stree, str_len);
   mu_assert(ret == 0, "Failed position to leaf verification.");
 
   free(pos_to_leaf);
-  ST_DeleteTree(stree);
+  SuffixTree_delete(&stree);
 
   return NULL;
 }
@@ -25,14 +25,14 @@ char* test_banana()
   char str[] = "BANANA";
   size_t str_len = sizeof(str) - 1;
 
-  SUFFIX_TREE* stree = ST_CreateTree(str, str_len);
-  NODE** pos_to_leaf = map_position_to_leaf(stree, str_len);
+  SuffixTree_T stree = SuffixTree_create(str, str_len);
+  Node_T* pos_to_leaf = map_position_to_leaf(stree, str_len);
   
   int ret = verify_map_position_to_leaf(pos_to_leaf, stree, str_len);
   mu_assert(ret == 0, "Failed position to leaf verification.");
 
   free(pos_to_leaf);
-  ST_DeleteTree(stree);
+  SuffixTree_delete(&stree);
 
   return NULL;
 }
@@ -45,14 +45,14 @@ char* test_random_strings()
   unsigned int i = 0;
   for(i = 0; i < 5; i++) {
     random_string(str, str_len);
-    SUFFIX_TREE* stree = ST_CreateTree(str, str_len);
-    NODE** pos_to_leaf = map_position_to_leaf(stree, str_len);
+    SuffixTree_T stree = SuffixTree_create(str, str_len);
+    Node_T* pos_to_leaf = map_position_to_leaf(stree, str_len);
 
     int ret = verify_map_position_to_leaf(pos_to_leaf, stree, str_len);
     mu_assert(ret == 0, "Failed pos_to_leaf verification for random string.");
 
     free(pos_to_leaf);
-    ST_DeleteTree(stree);
+    SuffixTree_delete(&stree);
   }
   
   free(str);
@@ -64,10 +64,10 @@ char* test_verification()
   char str[] = "BANANA";
   size_t str_len = sizeof(str) - 1;
 
-  SUFFIX_TREE* stree = ST_CreateTree(str, str_len);
-  NODE** pos_to_leaf = map_position_to_leaf(stree, str_len);
+  SuffixTree_T stree = SuffixTree_create(str, str_len);
+  Node_T* pos_to_leaf = map_position_to_leaf(stree, str_len);
   
-  NODE* tmp = NULL;
+  Node_T tmp = NULL;
   tmp = pos_to_leaf[3];
   pos_to_leaf[3] = pos_to_leaf[4];
   pos_to_leaf[4] = tmp;
@@ -77,7 +77,7 @@ char* test_verification()
   mu_assert(ret == 1, "Verified an incorrect leaf_map.");
 
   free(pos_to_leaf);
-  ST_DeleteTree(stree);
+  SuffixTree_delete(&stree);
 
   return NULL;
 
