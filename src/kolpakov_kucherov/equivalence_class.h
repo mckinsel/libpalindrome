@@ -13,7 +13,7 @@ typedef struct Table_T* Table_T;
 
 Table_T EquivClassTable_create(char*         query_string,
                                Index_T       query_length,
-                               SUFFIX_TREE** suffix_tree,
+                               SuffixTree_T* suffix_tree,
                                Index_T       substr_length);
 
 void    EquivClassTable_delete(Table_T* table);

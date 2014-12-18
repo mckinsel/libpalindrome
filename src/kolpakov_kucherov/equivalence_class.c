@@ -17,7 +17,7 @@ struct SubstrClassDFS {
  * substring annotation.
  *
  * Inputs:
- *    SUFFIX_TREE* stree      :   Initialized suffix tree
+ *    SuffixTree_T stree      :   Initialized suffix tree
  *    NODE* node              :   Current node in stree
  *    void* data              :   Void* to be a proper NODE_FUNC_T, but a
  *                                pointer to a struct SubstrClassDFS that will
@@ -29,14 +29,14 @@ struct SubstrClassDFS {
  *    size_t current_suf_length : prev_suf_length plus the length of the suffix
  *                                portion associated with this node
  */
-size_t annotate_substr_node_func(const SUFFIX_TREE* stree, const NODE* node,
+size_t annotate_substr_node_func(const SuffixTree_T stree, const Node_T node,
                                  void *data, size_t prev_suf_length)
 {
 
-  if(node == stree->root) return 0;
+  if(node == SuffixTree_get_root(stree)) return 0;
   struct SubstrClassDFS* dfs_data = data;
-  size_t edge_start = node->edge_label_start;
-  size_t edge_end = get_node_label_end(stree, node);
+  size_t edge_start = Node_get_edge_start(node, stree);
+  size_t edge_end = Node_get_edge_end(node, stree);
   size_t current_suf_length = prev_suf_length + edge_end - edge_start + 1;
 
   if(current_suf_length >= dfs_data->substr_length &&
@@ -44,8 +44,9 @@ size_t annotate_substr_node_func(const SUFFIX_TREE* stree, const NODE* node,
     (*dfs_data->class_label)++;
   }
 
-  if(edge_end == stree->e && current_suf_length - 1 >= dfs_data->substr_length) {
-    size_t suffix_start = stree->e - current_suf_length;
+  SuffixTreeIndex_T tree_end = SuffixTree_get_end(stree);
+  if(edge_end == tree_end && current_suf_length - 1 >= dfs_data->substr_length) {
+    size_t suffix_start = tree_end - current_suf_length;
     dfs_data->substr_classes[suffix_start] = *dfs_data->class_label;
   }
 
@@ -70,7 +71,7 @@ size_t annotate_substr_node_func(const SUFFIX_TREE* stree, const NODE* node,
  *    size_t str_length     :   Length of string from which stree was built, not
  *                              including the null terminator
  *    size_t substr_length  :   Length of substrings used to assign class ids
- *    SUFFIX_TREE* stree    :   Suffix tree for str
+ *    SuffixTree_T stree    :   Suffix tree for str
  *
  * Outputs:
  *    size_t* substr_classes  :   Array of length str_len containing ids for each
@@ -82,7 +83,7 @@ size_t annotate_substr_node_func(const SUFFIX_TREE* stree, const NODE* node,
  *    in str_len.
  */
 size_t* annotate_substr_classes(size_t str_length, size_t substr_length,
-                                const SUFFIX_TREE* stree)
+                                const SuffixTree_T stree)
 {
   struct SubstrClassDFS* dfs_data = malloc(sizeof(struct SubstrClassDFS));
   dfs_data->substr_length = substr_length;
@@ -90,7 +91,8 @@ size_t* annotate_substr_classes(size_t str_length, size_t substr_length,
   check_mem(dfs_data->class_label);
   dfs_data->substr_classes = calloc(1, str_length * sizeof(size_t));
    
-  ST_depth_first_walk(stree, stree->root, annotate_substr_node_func, dfs_data, 0);
+  SuffixTree_walk(stree, SuffixTree_get_root(stree), annotate_substr_node_func,
+                  dfs_data, 0);
 
   size_t* substr_classes = dfs_data->substr_classes;
   free(dfs_data->class_label);
@@ -200,7 +202,7 @@ struct Table_T {
  *                                classes
  *    size_t** forward_table  :   The RightClass table from the paper
  *    size_t** reverse_table  :   The LeftClass table from the paper
- *    SUFFIX_TREE** stree     :   Suffix tree of query_string
+ *    SuffixTree_T* stree     :   Suffix tree of query_string
  *
  * Outputs:
  *    None, but allocates forward_table, reverse_table, and stree. So caller is
@@ -210,7 +212,7 @@ struct Table_T {
 
 Table_T EquivClassTable_create(char*         query_string,
                                Index_T       query_length,
-                               SUFFIX_TREE** suffix_tree,
+                               SuffixTree_T* suffix_tree,
                                Index_T       substr_length)
 {
   Table_T table = calloc(1, sizeof(struct Table_T));
@@ -219,7 +221,7 @@ Table_T EquivClassTable_create(char*         query_string,
 
   char* query_plus_reverse = append_reverse(query_string, query_length);
   size_t qpr_length = QPR_LENGTH(query_length);
-  *suffix_tree = ST_CreateTree(query_plus_reverse, qpr_length);
+  *suffix_tree = SuffixTree_create(query_plus_reverse, qpr_length);
   size_t* substr_classes = annotate_substr_classes(qpr_length, substr_length,
                                                    *suffix_tree);
 

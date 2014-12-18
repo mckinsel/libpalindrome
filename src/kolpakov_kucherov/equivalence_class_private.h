@@ -7,7 +7,7 @@
 #define Table_T EquivClassTable_T
 
 size_t* annotate_substr_classes(size_t str_length, size_t substr_length,
-                                const SUFFIX_TREE* stree);
+                                const SuffixTree_T stree);
 
 int verify_substr_classes(const char* str, size_t str_len, size_t substr_len,
                           const size_t* substr_classes);
