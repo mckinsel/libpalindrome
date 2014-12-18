@@ -23,157 +23,42 @@ under the same terms as Perl itself.
 #ifndef _suffix_tree_H_
 #define _suffix_tree_H_
 
-typedef size_t DBL_WORD;
+#include <stdlib.h>
 
-/* Error return value for some functions. Initialized  in ST_CreateTree. */
-DBL_WORD    ST_ERROR;
+typedef size_t SuffixTreeIndex_T;
+typedef struct Node_T* Node_T;
+typedef struct SuffixTree_T* SuffixTree_T;
 
-/******************************************************************************/
-/*                           DATA STRUCTURES                                  */
-/******************************************************************************/
-/* This structure describes a node and its incoming edge */
-typedef struct SUFFIXTREENODE
-{
-   /* A linked list of sons of that node */
-   struct SUFFIXTREENODE*   sons;
-   /* A linked list of right siblings of that node */
-   struct SUFFIXTREENODE*   right_sibling;
-   /* A linked list of left siblings of that node */
-   struct SUFFIXTREENODE*   left_sibling;
-   /* A pointer to that node's father */
-   struct SUFFIXTREENODE*   father;
-   /* A pointer to the node that represents the largest 
-   suffix of the current node */
-   struct SUFFIXTREENODE*   suffix_link;
-   /* Index of the start position of the node's path */
-   DBL_WORD                 path_position;
-   /* Start index of the incoming edge */
-   DBL_WORD                 edge_label_start;
-   /* End index of the incoming edge */
-   DBL_WORD                 edge_label_end;
-   /* An index for the node */
-   DBL_WORD                 index;
-} NODE;
+/* SuffixTree functions */
+SuffixTree_T SuffixTree_create(char* str, SuffixTreeIndex_T length);
+void         SuffixTree_print(SuffixTree_T tree);
+void         SuffixTree_delete(SuffixTree_T* tree);
+int          SuffixTree_verify(SuffixTree_T tree);
 
-/* This structure describes a suffix tree */
-typedef struct SUFFIXTREE
-{
-   /* The virtual end of all leaves */
-   DBL_WORD                 e;
-   /* The one and only real source string of the tree. All edge-labels
-      contain only indices to this string and do not contain the characters
-      themselves */
-   char*           tree_string;
-   /* The length of the source string */
-   DBL_WORD                 length;
-   /* The number of nodes in the tree */
-   DBL_WORD                 num_nodes;
-   /* The node that is the head of all others. It has no siblings nor a
-      father */
-   NODE*                    root;
-} SUFFIX_TREE;
+typedef      SuffixTreeIndex_T (*NodeFunc_T)(SuffixTree_T tree,
+                                             Node_T node,
+                                             void* data,
+                                             SuffixTreeIndex_T counter);
+void         SuffixTree_walk(SuffixTree_T tree, Node_T node,
+                             NodeFunc_T node_func, void* data, size_t counter);
 
+SuffixTreeIndex_T SuffixTree_find_substring(const SuffixTree_T tree,
+                                            char* query,
+                                            SuffixTreeIndex_T query_length);
 
-/******************************************************************************/
-/*                         INTERFACE FUNCTIONS                                */
-/******************************************************************************/
-/* 
-   ST_CreateTree :
-   Allocates memory for the tree and starts Ukkonen's construction algorithm by
-   calling SPA n times, where n is the length of the source string.
+Node_T SuffixTree_get_root(SuffixTree_T tree);
+SuffixTreeIndex_T SuffixTree_get_num_nodes(SuffixTree_T tree);
+SuffixTreeIndex_T SuffixTree_get_end(SuffixTree_T tree);
+size_t SuffixTree_get_string_length(SuffixTree_T tree);
 
-   Input : The source string and its length. The string is a sequence of
-           characters (maximum of 256 different symbols) and not
-           null-terminated. The only symbol that must not appear in the string
-           is $ (the dollar sign). It is used as a unique symbol by the
-           algorithm and is appended automatically at the end of the string (by
-           the program, not by the user!). The meaning of the $ sign is
-           connected to the implicit/explicit suffix tree transformation,
-           detailed in Ukkonen's algorithm.
+Node_T* SuffixTree_create_node_array(SuffixTree_T tree);
 
-   Output: A pointer to the newly created tree. Keep this pointer in order to
-           perform operations like search and delete on that tree. Obviously,
-           no de-allocating of the tree space could be done if this pointer is
-           lost, as the tree is allocated dynamically on the heap.
-*/
+/* Node functions */
+SuffixTreeIndex_T Node_get_edge_start(Node_T node, SuffixTree_T tree);
+SuffixTreeIndex_T Node_get_edge_end(Node_T node, SuffixTree_T tree);
+Node_T Node_get_child(Node_T node);
+Node_T Node_get_sibling(Node_T node);
+Node_T Node_get_parent(Node_T node);
+SuffixTreeIndex_T Node_get_index(Node_T node);
 
-SUFFIX_TREE* ST_CreateTree(const char*   str, DBL_WORD length);
-
-/******************************************************************************/
-/*
-   ST_FindSubstring :
-   Traces for a string in the tree. This function is used for substring search
-   after tree construction is done. It simply traverses down the tree starting
-   from the root until either the searched string is fully found ot one
-   non-matching character is found. In this function skipping is not enabled
-   because we don't know wether the string is in the tree or not (see function
-   trace_string above).
-
-   Input : The tree, the string W, and the length of W.
-
-   Output: If the substring is found - returns the index of the starting
-           position of the substring in the tree source string. If the substring
-           is not found - returns ST_ERROR.
-*/
-
-DBL_WORD ST_FindSubstring(const SUFFIX_TREE*      tree,   /* The suffix array */
-                          char*    W,      /* The substring to find */
-                          DBL_WORD          P);     /* The length of W */
-
-/******************************************************************************/
-/*
-   ST_PrintTree :
-   This function prints the tree. It simply starts the recoursive function
-   ST_PrintNode from the root
-
-   Input : The tree to be printed.
-  
-   Output: A print out of the tree to the screen.
-*/
-
-void ST_PrintTree(SUFFIX_TREE* tree);
-
-/******************************************************************************/
-/*
-   ST_DeleteTree
-   Deletes a whole suffix tree by starting a recoursive call to ST_DeleteSubTree
-   from the root. After all of the nodes have been deleted, the function deletes
-   the structure that represents the tree.
-
-   Input : The tree to be deleted.
-
-   Output: None.
-*/
-
-void ST_DeleteTree(SUFFIX_TREE* tree);
-
-/******************************************************************************/
-/*
-   ST_SelfTest
-   Self test of the tree - search for all substrings of the main string. See
-   testing paragraph in the readme.txt file.
-
-   Input : The tree to test.
-
-   Output: 1 for success and 0 for failure. Prints a result message to the
-           screen.
-*/
-
-DBL_WORD ST_SelfTest(const SUFFIX_TREE* tree);
-
-/*
- * Get the end position in the string of a node's incoming edge.
- */
-DBL_WORD get_node_label_end(const SUFFIX_TREE* tree, const NODE* node);
-
-/*
- * Create an array of pointers to all the nodes.
- */
-NODE** ST_CreateNodeArray(const SUFFIX_TREE* tree);
-
-typedef size_t (*NODE_FUNC_T)(const SUFFIX_TREE* tree, const NODE* node,
-                              void* data, size_t counter);
-
-void ST_depth_first_walk(const SUFFIX_TREE* tree, const NODE* node,
-                         NODE_FUNC_T node_func, void* data, size_t counter);
 #endif
