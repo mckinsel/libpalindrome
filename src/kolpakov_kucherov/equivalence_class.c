@@ -35,18 +35,16 @@ size_t annotate_substr_node_func(const SuffixTree_T stree, const Node_T node,
 
   if(node == SuffixTree_get_root(stree)) return 0;
   struct SubstrClassDFS* dfs_data = data;
-  size_t edge_start = Node_get_edge_start(node, stree);
-  size_t edge_end = Node_get_edge_end(node, stree);
-  size_t current_suf_length = prev_suf_length + edge_end - edge_start + 1;
+  size_t edge_length = Node_get_incoming_edge_length(node, stree);
+  size_t current_suf_length = prev_suf_length + edge_length + 1;
 
   if(current_suf_length >= dfs_data->substr_length &&
       prev_suf_length < dfs_data->substr_length) {
     (*dfs_data->class_label)++;
   }
 
-  SuffixTreeIndex_T tree_end = SuffixTree_get_end(stree);
-  if(edge_end == tree_end && current_suf_length - 1 >= dfs_data->substr_length) {
-    size_t suffix_start = tree_end - current_suf_length;
+  if(Node_is_leaf(node, stree) && current_suf_length - 1 >= dfs_data->substr_length) {
+    size_t suffix_start = SuffixTree_get_string_length(stree) - current_suf_length;
     dfs_data->substr_classes[suffix_start] = *dfs_data->class_label;
   }
 

@@ -307,14 +307,12 @@ void map_position_to_leaf_dfs(const SuffixTree_T stree,
                               Node_T* leaf_map,
                               size_t prev_suf_length)
 {
-  size_t edge_start = Node_get_edge_start(node, stree);
-  size_t edge_end = Node_get_edge_end(node, stree);
-  size_t current_suf_length = prev_suf_length + edge_end - edge_start + 1;
+  size_t edge_length = Node_get_incoming_edge_length(node, stree);
+  size_t current_suf_length = prev_suf_length + edge_length + 1;
   
-  SuffixTreeIndex_T tree_end = SuffixTree_get_end(stree); 
-  if(edge_end == tree_end) {
-    size_t suffix_start = tree_end - current_suf_length;
-    if(suffix_start + 1 != tree_end) {
+  if(Node_is_leaf(node, stree)) {
+    size_t suffix_start = SuffixTree_get_string_length(stree) - current_suf_length;
+    if(suffix_start + 1 != SuffixTree_get_string_length(stree)) {
       leaf_map[suffix_start] = node;
     }
     return;
@@ -346,18 +344,16 @@ int verify_map_position_to_leaf(Node_T* pos_to_leaf,
 {
   size_t i = 0;
   size_t suffix_depth = 0;
-  size_t incoming_start = 0;
-  size_t incoming_end = 0;
+  size_t incoming_edge_length = 0;
 
   for(i = 0; i < query_len; i++) {
 
     Node_T node = pos_to_leaf[i];
     suffix_depth = 0;
     while(Node_get_parent(node) != 0) {
-      incoming_start = Node_get_edge_start(node, stree);
-      incoming_end = Node_get_edge_end(node, stree);
+      incoming_edge_length = Node_get_incoming_edge_length(node, stree);
       /* Stop when we reach the edge to the root */
-      suffix_depth += incoming_end - incoming_start + 1;
+      suffix_depth += incoming_edge_length + 1;
       node = Node_get_parent(node);
     }
 
