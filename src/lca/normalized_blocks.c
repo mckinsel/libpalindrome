@@ -179,7 +179,7 @@ int BRT_verify(const BlockRMQTable* block_rmq_table, const size_t* block)
 BlockRMQDatabase* BRD_create(size_t block_size)
 {
   
-  BlockRMQDatabase* block_rmq_db = malloc(sizeof(BlockRMQDatabase));
+  BlockRMQDatabase* block_rmq_db = calloc(1, sizeof(BlockRMQDatabase));
   check_mem(block_rmq_db);
 
   block_rmq_db->block_size = block_size;

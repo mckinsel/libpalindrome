@@ -748,7 +748,7 @@ SuffixTreeIndex_T node_array_node_func(SuffixTree_T tree, Node_T node, void* vno
 
 Node_T* SuffixTree_create_node_array(SuffixTree_T tree)
 {
-  Node_T* node_array = calloc(tree->num_nodes, sizeof(struct Node_T));
+  Node_T* node_array = calloc(tree->num_nodes, sizeof(Node_T));
   check_mem(node_array);
 
   SuffixTree_walk(tree, tree->root, node_array_node_func,

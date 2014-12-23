@@ -84,14 +84,16 @@ error:
 /* Free a SparseTable. */
 void SparseTable_delete(SparseTable* sparse_table)
 {
-  if(sparse_table->table) {
-    size_t i = 0;
-    for(i = 0; i < sparse_table->nrows; i++) {
-      if(sparse_table->table[i]) free(sparse_table->table[i]);
+  if(sparse_table) {
+    if(sparse_table->table) {
+      size_t i = 0;
+      for(i = 0; i < sparse_table->nrows; i++) {
+        if(sparse_table->table[i]) free(sparse_table->table[i]);
+      }
+      free(sparse_table->table);
     }
-    free(sparse_table->table);
+    free(sparse_table);
   }
-  if(sparse_table) free(sparse_table);
 }
 
 /*

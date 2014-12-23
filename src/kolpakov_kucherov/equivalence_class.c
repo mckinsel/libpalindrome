@@ -83,7 +83,7 @@ size_t annotate_substr_node_func(const SuffixTree_T stree, const Node_T node,
 size_t* annotate_substr_classes(size_t str_length, size_t substr_length,
                                 const SuffixTree_T stree)
 {
-  struct SubstrClassDFS* dfs_data = malloc(sizeof(struct SubstrClassDFS));
+  struct SubstrClassDFS* dfs_data = calloc(1, sizeof(struct SubstrClassDFS));
   dfs_data->substr_length = substr_length;
   dfs_data->class_label = calloc(1, sizeof(size_t));
   check_mem(dfs_data->class_label);

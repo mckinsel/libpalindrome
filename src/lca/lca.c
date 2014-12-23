@@ -224,7 +224,7 @@ int TreeLCA_verify(const SuffixTree_T stree, const TreeLCA* tree_lca)
         node1_to_root_i++;
         if(node1_to_root_i == node1_to_root_size) {
           node1_to_root = realloc(node1_to_root,
-                                  (20 + node1_to_root_size) * sizeof(size_t));
+                                  (20 + node1_to_root_size) * sizeof(Node_T));
           node1_to_root_size += 20;
         }
         next_node = Node_get_parent(next_node);
