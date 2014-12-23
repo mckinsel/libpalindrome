@@ -12,7 +12,9 @@ char* test_panama()
   mu_assert(rc == 0, "Faild radii verification for panama palindrome.");
   
   mu_assert(radii[21] == 10, "Failed to find full AMANAPLANACANALPANAMA palindrome.");
-  
+
+  print_radii_and_query(str, str_len, radii);
+
   free(radii);
   return NULL;
 }
@@ -37,7 +39,7 @@ char* test_empty()
   size_t* radii = manacher(str, str_len);
    
   int rc = verify_palindrome_radii(str, str_len, radii);
-  mu_assert(rc == 0, "Failed radii verification for run of Ts palindrome.");
+  mu_assert(rc == 0, "Failed radii verification for empty string.");
 
   free(radii);
   return NULL;

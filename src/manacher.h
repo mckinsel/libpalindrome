@@ -7,6 +7,6 @@ int verify_palindrome_radii(char* query_string, size_t query_length, size_t* pal
 
 char* longest_palindrome(char* query_string, size_t query_length, size_t* pal_radii);
 
-void print_radii_and_query(char* query_str, size_t query_length, size_t radii);
+void print_radii_and_query(char* query_str, size_t query_length, size_t* radii);
 
 #endif
