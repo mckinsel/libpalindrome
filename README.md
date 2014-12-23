@@ -1,7 +1,5 @@
 [![Build
-Status](https://travis-ci.org/mckinsel/libpalindrome.svg?branch=master)](https://travis-ci.org/mckinsel/libpalindrome)
-
-[![Coverage
+Status](https://travis-ci.org/mckinsel/libpalindrome.svg?branch=master)](https://travis-ci.org/mckinsel/libpalindrome) [![Coverage
 Status](https://img.shields.io/coveralls/mckinsel/libpalindrome.svg)](https://coveralls.io/r/mckinsel/libpalindrome?branch=master)
 
 # libpalindrome

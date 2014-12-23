@@ -1,3 +1,6 @@
+# When set to true, enable gcov
+ENABLE_COVERAGE?=false
+
 CFLAGS=-g -O3 -Wall -Wextra -Isrc -DNDEBUG $(OPTFLAGS)
 ifneq "$(CC)" "clang"
 	CFLAGS += -rdynamic
@@ -14,14 +17,15 @@ TESTS=$(patsubst %.c,%,$(TEST_SRC))
 TARGET=build/libpalindrome.a
 SO_TARGET=$(patsubst %.a,%.so,$(TARGET))
 
+ifeq "$(ENABLE_COVERAGE)" "true"
+	CFLAGS=-g -O0 -Wall -Wextra -Isrc -fprofile-arcs -ftest-coverage
+endif
+
 # The Target Build
 all: $(TARGET) $(SO_TARGET)
 
 dev: CFLAGS=-g2 -pg -Wall -Wextra -Isrc $(OPTFLAGS)
 dev: all
-
-cov: CFLAGS=-g -O0 -Wall -Wextra -Isrc -fprofile-arcs -ftest-coverage
-cov: all
 
 $(TARGET): CFLAGS += -fPIC
 $(TARGET): build $(OBJECTS)
@@ -36,13 +40,12 @@ build:
 #		@mkdir -p bin
 
 .PHONY: test
+ifeq "$(ENABLE_COVERAGE)" "true"
+test: LDLIBS += $(TARGET) -fprofile-arcs -lm
+else
 test: LDLIBS += $(SO_TARGET)
+endif
 test: $(TESTS)
-		sh ./tests/runtests.sh
-
-.PHONY: test-cov
-test-cov: LDLIBS += $(TARGET) -fprofile-arcs -lm
-test-cov: $(TESTS)
 		sh ./tests/runtests.sh
 
 valgrind:

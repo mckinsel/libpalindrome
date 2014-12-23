@@ -2,11 +2,23 @@ language:   c
 
 compiler:
     - gcc
+    - clang
+
+env:
+    - ENABLE_COVERAGE=false
+    - ENABLE_COVERAGE=true
+
+matrix:
+    include:
+        - compiler: clang
+          env: ENABLE_COVERAGE=false
+        - compiler: gcc
+          env: ENABLE_COVERAGE=true
 
 before_install:
-    sudo pip install cpp-coveralls
+    - if [ "$ENABLE_COVERAGE" == "true" ] ; then sudo pip install cpp-coveralls ; fi
 
-script: make cov && make test-cov
+script: make && make test
 
 after_success:
-    - coveralls -b . -e build -e tests --gcov-options '\-lp'
+    - if [ "$ENABLE_COVERAGE" == "true" ] ; then coveralls -b . -e build -e tests --gcov-options '\-lp' ; fi
