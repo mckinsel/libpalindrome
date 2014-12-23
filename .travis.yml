@@ -9,11 +9,11 @@ env:
     - ENABLE_COVERAGE=true
 
 matrix:
-    include:
+    exclude:
         - compiler: clang
-          env: ENABLE_COVERAGE=false
-        - compiler: gcc
           env: ENABLE_COVERAGE=true
+        - compiler: gcc
+          env: ENABLE_COVERAGE=false
 
 before_install:
     - if [ "$ENABLE_COVERAGE" == "true" ] ; then sudo pip install cpp-coveralls ; fi
