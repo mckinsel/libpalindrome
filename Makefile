@@ -20,6 +20,9 @@ all: $(TARGET) $(SO_TARGET)
 dev: CFLAGS=-g2 -pg -Wall -Wextra -Isrc $(OPTFLAGS)
 dev: all
 
+cov: CFLAGS=-g -O0 -Wall -Wextra -Isrc -fprofile-arcs -ftest-coverage
+cov: all
+
 $(TARGET): CFLAGS += -fPIC
 $(TARGET): build $(OBJECTS)
 		ar rcs $@ $(OBJECTS)
@@ -35,6 +38,11 @@ build:
 .PHONY: test
 test: LDLIBS += $(SO_TARGET)
 test: $(TESTS)
+		sh ./tests/runtests.sh
+
+.PHONY: test-cov
+test-cov: LDLIBS += $(TARGET) -fprofile-arcs -lm
+test-cov: $(TESTS)
 		sh ./tests/runtests.sh
 
 valgrind:

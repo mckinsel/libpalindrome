@@ -1,7 +1,12 @@
 language:   c
 
 compiler:
-    - clang
     - gcc
 
-script: make && make test
+before_install:
+    sudo pip install cpp-coveralls
+
+script: make cov && make test-cov
+
+after_success:
+    - coveralls -b . -e build -e tests --gcov-options '\-lp'
