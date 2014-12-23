@@ -1,6 +1,9 @@
 [![Build
 Status](https://travis-ci.org/mckinsel/libpalindrome.svg?branch=master)](https://travis-ci.org/mckinsel/libpalindrome)
 
+[![Coverage
+Status](https://img.shields.io/coveralls/mckinsel/libpalindrome.svg)](https://coveralls.io/r/mckinsel/libpalindrome?branch=master)
+
 # libpalindrome
 libpalindrome provides functions for finding palindromes in strings. Classically,
 a palindrome is a sequence that reads the same forward and backward. For
