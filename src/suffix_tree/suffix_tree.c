@@ -650,6 +650,7 @@ void SuffixTree_print_node(SuffixTree_T tree, Node_T node1, long depth)
    Node_T node2 = node1->left_son;
    long  d = depth , start = node1->edge_label_start , end;
    end     = get_node_label_end(tree, node1);
+   long orig_start = start;
 
    if(depth>0)
    {
@@ -667,7 +668,7 @@ void SuffixTree_print_node(SuffixTree_T tree, Node_T node1, long depth)
          start++;
       }
 
-      printf("\t%zu\t%p", node1->index, node1);
+      printf("\t%zu\t%ld\t%ld", node1->index, orig_start, end);
       printf("\n");
    }
    /* Recoursive call for all node1's sons */
@@ -700,6 +701,7 @@ void SuffixTree_print_full_node(SuffixTree_T tree, Node_T node)
 
 void SuffixTree_print(SuffixTree_T tree)
 {
+   printf("\ntree_string: %s\n", tree->tree_string + 1);
    printf("\nroot\n");
    SuffixTree_print_node(tree, tree->root, 0);
    printf("\nSuffix tree of string of length %zd with %zd nodes.\n",
@@ -777,10 +779,6 @@ Node_T SuffixTree_get_root(SuffixTree_T tree)
   return tree->root;
 }
 
-SuffixTreeIndex_T SuffixTree_get_end(SuffixTree_T tree){
-  return tree->e;
-}
-
 SuffixTreeIndex_T SuffixTree_get_string_length(SuffixTree_T tree)
 {
   return tree->length;
@@ -791,15 +789,13 @@ SuffixTreeIndex_T SuffixTree_get_num_nodes(SuffixTree_T tree)
   return tree->num_nodes;
 }
 
-SuffixTreeIndex_T Node_get_edge_start(Node_T node, SuffixTree_T tree)
+SuffixTreeIndex_T Node_get_incoming_edge_length(Node_T node, SuffixTree_T tree)
 {
-  (void)tree;
-  return node->edge_label_start;
+  return get_node_label_end(tree, node) - node->edge_label_start;
 }
 
-SuffixTreeIndex_T Node_get_edge_end(Node_T node, SuffixTree_T tree)
-{
-  return get_node_label_end(tree, node);
+int Node_is_leaf(Node_T node, SuffixTree_T tree) {
+  return get_node_label_end(tree, node) == tree->e;
 }
 
 SuffixTreeIndex_T Node_get_index(Node_T node)
