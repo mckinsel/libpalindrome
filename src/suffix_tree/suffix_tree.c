@@ -679,26 +679,6 @@ void SuffixTree_print_node(SuffixTree_T tree, Node_T node1, long depth)
    }
 }
 
-void SuffixTree_print_full_node(SuffixTree_T tree, Node_T node)
-{
-   SuffixTreeIndex_T start, end;
-   if(node == NULL)
-      return;
-   /* Calculating the begining and ending of the last edge */
-   start   = node->edge_label_start;
-   end     = get_node_label_end(tree, node);
-   
-   /* Stoping condition - the root */
-   if(node->father!=tree->root)
-      SuffixTree_print_full_node(tree,node->father);
-   /* Print the last edge */
-   while(start<=end)
-   {
-      printf("%c",tree->tree_string[start]);
-      start++;
-   }
-}
-
 void SuffixTree_print(SuffixTree_T tree)
 {
    printf("\ntree_string: %s\n", tree->tree_string + 1);
