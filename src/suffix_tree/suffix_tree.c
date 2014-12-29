@@ -668,7 +668,7 @@ void SuffixTree_print_node(SuffixTree_T tree, Node_T node1, long depth)
          start++;
       }
 
-      printf("\t%zu\t%ld\t%ld", node1->index, orig_start, end);
+      printf("\t%zu\t%ld\t%ld\t%ld", node1->index, orig_start, end, node1->path_position);
       printf("\n");
    }
    /* Recoursive call for all node1's sons */
@@ -703,13 +703,20 @@ int SuffixTree_verify(SuffixTree_T tree)
          if(i == (SuffixTreeIndex_T)-1)
          {
             printf("\n\nTest Results: Fail in string (%zu,%zu).\n\n",j,k);
-            return 0;
+            return 1;
+         }
+         int cmp_val = strncmp(tree->tree_string + j, tree->tree_string + i,
+                               k - j + 1);
+         if(cmp_val != 0) {
+           printf("Searched for substring %.*s in %s, but found it at position %ld.\n",
+                  (int)(k-j+1), tree->tree_string+j, tree->tree_string, i);
+           return 1;
          }
       }
    }
    /* If we are here no search has failed and the test passed successfuly */
    printf("Suffix tree SelfTest Result: Success.\n");
-   return 1;
+   return 0;
 }
 
 SuffixTreeIndex_T node_array_node_func(SuffixTree_T tree, Node_T node, void* vnode_array,

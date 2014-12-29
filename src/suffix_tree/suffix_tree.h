@@ -72,7 +72,7 @@ void         SuffixTree_delete(SuffixTree_T* tree);
  * Run some slow tests on the tree to verify that it has expected properties.
  *
  * Returns:
- * 1 if tests pass, else 0.
+ * 0 if tests pass, else 1.
  */
 int          SuffixTree_verify(SuffixTree_T tree);
 
