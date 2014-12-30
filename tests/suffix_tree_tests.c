@@ -14,7 +14,7 @@ char* test_random_strings()
     SuffixTree_T stree = SuffixTree_create(str, str_len);
     int rc = SuffixTree_verify(stree);
 
-    mu_assert(rc == 1, "Suffix tree failed self test.");
+    mu_assert(rc == 0, "Suffix tree failed self test.");
 
     SuffixTree_delete(&stree);
   }
@@ -33,6 +33,9 @@ char* test_print_stree()
   SuffixTree_T stree = SuffixTree_create(str, str_len);
   printf("\nSuffix tree for BANANA:");
   SuffixTree_print(stree);
+  int rc = SuffixTree_verify(stree);
+
+  mu_assert(rc == 0, "Suffix tree failed self test.");
     
   SuffixTree_delete(&stree);
 
