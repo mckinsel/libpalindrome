@@ -2,6 +2,7 @@
 #include "test_utils.h"
 
 #include "lca/lca.h"
+#include "suffix_tree/suffix_tree.h"
 
 char* test_banana()
 {
