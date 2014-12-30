@@ -747,6 +747,64 @@ error:
   return NULL;
 }
 
+SuffixTreeIndex_T leaf_array_node_func(SuffixTree_T tree, Node_T node, void* vleaf_array,
+                                       SuffixTreeIndex_T prev_suf_length)
+{
+  if(node == SuffixTree_get_root(tree)) return 0;
+
+  size_t edge_length = Node_get_incoming_edge_length(node, tree);
+  size_t current_suf_length = prev_suf_length + edge_length + 1;
+
+  Node_T* leaf_array = vleaf_array;
+  if(Node_is_leaf(node, tree)) {
+    size_t suffix_start = SuffixTree_get_string_length(tree) - current_suf_length;
+    if(suffix_start + 1 != SuffixTree_get_string_length(tree)) {
+      leaf_array[suffix_start] = node;
+    }
+  }
+
+  return current_suf_length;
+}
+
+
+Node_T* SuffixTree_create_leaf_array(SuffixTree_T tree)
+{
+  Node_T* leaf_array = calloc(tree->length, sizeof(Node_T));
+  check_mem(leaf_array);
+
+  SuffixTree_walk(tree, tree->root, leaf_array_node_func,
+                  leaf_array, 0);
+
+  return leaf_array;
+
+error:
+  return NULL;
+}
+
+int SuffixTree_verify_leaf_array(SuffixTree_T tree, const Node_T* leaf_array)
+{
+  size_t i = 0;
+  size_t suffix_depth = 0;
+  size_t incoming_edge_length = 0;
+
+  for(i = 0; i < tree->length - 1; i++) {
+
+    Node_T node = leaf_array[i];
+    suffix_depth = 0;
+    while(Node_get_parent(node) != 0) {
+      incoming_edge_length = Node_get_incoming_edge_length(node, tree);
+      /* Stop when we reach the edge to the root */
+      suffix_depth += incoming_edge_length + 1;
+      node = Node_get_parent(node);
+    }
+
+    if(i != tree->length - 1 - (suffix_depth - 1)) {
+      log_warn("Leaf at position %zd has suffix of length %zd.", i, suffix_depth);
+      return 1;
+    }
+  }
+  return 0;
+}
 void SuffixTree_walk(SuffixTree_T tree, Node_T node,
                      NodeFunc_T node_func, void* data,
                      SuffixTreeIndex_T counter)

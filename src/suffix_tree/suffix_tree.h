@@ -157,6 +157,14 @@ size_t SuffixTree_get_string_length(SuffixTree_T tree);
  */
 Node_T* SuffixTree_create_node_array(SuffixTree_T tree);
 
+/*
+ * Create an array of pointers to leaves of a suffix tree, such that the i-th
+ * position in the leaf array corresponds to the i-th position in the input
+ * string.
+ */
+Node_T* SuffixTree_create_leaf_array(SuffixTree_T tree);
+
+int SuffixTree_verify_leaf_array(SuffixTree_T tree, const Node_T* leaf_array);
 
 /* Node_T FUNCTIONS */
 
