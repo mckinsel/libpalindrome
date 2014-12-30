@@ -44,15 +44,4 @@ void TreeLCA_delete(TreeLCA* tree_lca);
 Node_T TreeLCA_lookup(const TreeLCA* tree_lca, const Node_T node1, const Node_T node2);
 int TreeLCA_verify(const SuffixTree_T stree, const TreeLCA* tree_lca);
 
-
-Node_T* map_position_to_leaf(const SuffixTree_T stree, size_t str_len);
-
-void map_position_to_leaf_dfs(const SuffixTree_T stree,
-                              Node_T node,
-                              Node_T* leaf_map,
-                              size_t prev_suf_length);
-
-int verify_map_position_to_leaf(Node_T* pos_to_leaf,
-                                const SuffixTree_T stree,
-                                size_t query_len);
 #endif
