@@ -681,7 +681,7 @@ void SuffixTree_print_node(SuffixTree_T tree, Node_T node1, long depth)
 
 void SuffixTree_print(SuffixTree_T tree)
 {
-   printf("\ntree_string: %s\n", tree->tree_string + 1);
+   printf("\ntree_string: %.*s\n", (int)tree->length, tree->tree_string + 1);
    printf("\nroot\n");
    SuffixTree_print_node(tree, tree->root, 0);
    printf("\nSuffix tree of string of length %zd with %zd nodes.\n",
