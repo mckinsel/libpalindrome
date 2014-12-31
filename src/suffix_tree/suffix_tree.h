@@ -54,9 +54,9 @@ typedef size_t SuffixTreeIndex_T;
  *  char* str           :     The string for which the suffix tree will
  *                            be created. This string cannot contain the
  *                            character '$'.
- *  size_t length       :     The length of str, including its null-terminator.
+ *  size_t length       :     The length of str, not including its null-terminator.
  */
-SuffixTree_T SuffixTree_create(char* str, SuffixTreeIndex_T length);
+SuffixTree_T SuffixTree_create(char* str, size_t length);
 
 /*
  * Print a text representation of the tree to stdout.
@@ -119,6 +119,9 @@ void         SuffixTree_walk(SuffixTree_T tree, Node_T node,
                              NodeFunc_T node_func, void* data,
                              SuffixTreeIndex_T counter);
 
+void         SuffixTree_euler_walk(SuffixTree_T tree, Node_T node,
+                                   NodeFunc_T node_func, void* data,
+                                   SuffixTreeIndex_T counter);
 /*
  * Find the position of a substring in the string used to create the suffix
  * tree.

@@ -560,22 +560,21 @@ void label_nodes(Node_T node, SuffixTreeIndex_T* label)
   }
 }
 
-SuffixTree_T SuffixTree_create(char* str, SuffixTreeIndex_T length)
+SuffixTree_T SuffixTree_create(char* str, size_t length)
 {
-   SuffixTree_T  tree;
-   SuffixTreeIndex_T      phase , extension;
-   char          repeated_extension = 0;
-   struct SuffixTreePos           pos;
+   SuffixTree_T tree;
+   SuffixTreeIndex_T phase , extension;
+   char repeated_extension = 0;
+   struct SuffixTreePos pos;
 
-   if(str == 0)
-      return 0;
+   if(str == NULL) return NULL;
 
    /* Allocating the tree */
    tree = malloc(sizeof(struct SuffixTree_T));
    check_mem(tree);
 
-   /* Calculating string length (with an ending $ sign) */
-   tree->length         = length+1;
+   /* Calculating string length (with an ending terminator) */
+   tree->length = length+1;
    
    /* Allocating the only real string of the tree */
    tree->tree_string = malloc((tree->length+1)*sizeof(char));
@@ -583,8 +582,7 @@ SuffixTree_T SuffixTree_create(char* str, SuffixTreeIndex_T length)
 
    memcpy(tree->tree_string+sizeof(char),str,length*sizeof(char));
 
-   /* $ is considered a uniqe symbol */
-   tree->tree_string[tree->length] = '$';
+   tree->tree_string[tree->length] = '\0';
    
    /* Allocating the tree root node */
    tree->root = create_node(0, 0, 0, 0);
@@ -686,6 +684,7 @@ void SuffixTree_print(SuffixTree_T tree)
    SuffixTree_print_node(tree, tree->root, 0);
    printf("\nSuffix tree of string of length %zd with %zd nodes.\n",
           tree->length, tree->num_nodes);
+   printf("Index EdgeStart EdgeEnd PathPosition\n");
 }
 
 int SuffixTree_verify(SuffixTree_T tree)
@@ -815,6 +814,21 @@ void SuffixTree_walk(SuffixTree_T tree, Node_T node,
 
   while(next_node != NULL) {
     SuffixTree_walk(tree, next_node, node_func, data, new_counter);
+    next_node = next_node->right_sibling;
+  }
+}
+
+void SuffixTree_euler_walk(SuffixTree_T tree, Node_T node,
+                           NodeFunc_T node_func, void* data,
+                           SuffixTreeIndex_T counter)
+{
+  SuffixTreeIndex_T new_counter = node_func(tree, node, data, counter);
+
+  Node_T next_node = node->left_son;
+
+  while(next_node != NULL) {
+    SuffixTree_euler_walk(tree, next_node, node_func, data, new_counter);
+    node_func(tree, node, data, counter);
     next_node = next_node->right_sibling;
   }
 }
