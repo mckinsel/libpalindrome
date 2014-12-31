@@ -9,43 +9,40 @@ char* test_abcde()
   size_t str_len = sizeof(str) - 1;
 
   SuffixTree_T stree = SuffixTree_create(str, str_len);
+  EulerTour_T euler_tour = EulerTour_create(stree);
   
-  Node_T* tour;
-  SuffixTreeIndex_T* depths;
-  SuffixTreeIndex_T* first_instances;
-  
-  euler_tour_arrays_create(stree, &tour, &depths, &first_instances);
+  SuffixTree_print(stree);
+  EulerTour_print(euler_tour);
+
   SuffixTreeIndex_T root_id = Node_get_index(SuffixTree_get_root(stree));
   SuffixTreeIndex_T num_nodes = SuffixTree_get_num_nodes(stree);
 
   size_t i = 0;
   for(i = 0; i < 2 * num_nodes - 1; i++) {
-    if(i % 2 == 0) mu_assert(depths[i] == 0,
+    if(i % 2 == 0) mu_assert(euler_tour->depths[i] == 0,
                              "Even positions in ABCDE are not root depth");
-    if(i % 2 == 1) mu_assert(depths[i] == 1,
+    if(i % 2 == 1) mu_assert(euler_tour->depths[i] == 1,
                              "Odd positions in ABCDE are not depth one.");
 
-    if(i % 2 == 0) mu_assert(Node_get_index(tour[i]) == root_id,
+    if(i % 2 == 0) mu_assert(Node_get_index(euler_tour->nodes[i]) == root_id,
                              "Even position in ABCDE tour is not the root.");
-    if(i % 2 != 0) mu_assert(Node_get_index(tour[i]) != root_id,
+    if(i % 2 != 0) mu_assert(Node_get_index(euler_tour->nodes[i]) != root_id,
                              "Odd position in ABCDE tour is the root.");
   }
   for(i = 0; i < num_nodes; i++) {
     if(i == 0) {
-      mu_assert(first_instances[i] == 0, "Incorrect first node instance assignment.");
+      mu_assert(euler_tour->first_instances[i] == 0, "Incorrect first node instance assignment.");
     } else {
-      mu_assert(first_instances[i] == i * 2 - 1,
+      mu_assert(euler_tour->first_instances[i] == i * 2 - 1,
                 "Incorrect first node instance assignment.");
     }
   }
 
-  int ret = verify_rmq_arrays(stree, tour, depths, first_instances);
-  mu_assert(ret == 0, "RMQ array verification failed.");
+  int ret = EulerTour_verify(euler_tour, stree);
+  mu_assert(ret == 0, "Euler tour verification failed.");
 
   SuffixTree_delete(&stree);
-  free(tour);
-  free(depths);
-  free(first_instances);
+  EulerTour_delete(&euler_tour);
   return NULL;
 }
 
@@ -56,19 +53,13 @@ char* test_banana()
 
   SuffixTree_T stree = SuffixTree_create(str, str_len);
 
-  Node_T* tour;
-  SuffixTreeIndex_T* depths;
-  SuffixTreeIndex_T* first_instances;
- 
-  euler_tour_arrays_create(stree, &tour, &depths, &first_instances);
+  EulerTour_T euler_tour = EulerTour_create(stree);
   
-  int ret = verify_rmq_arrays(stree, tour, depths, first_instances);
-  mu_assert(ret == 0, "RMQ array verification failed.");
+  int ret = EulerTour_verify(euler_tour, stree);
+  mu_assert(ret == 0, "Euler tour verification failed.");
   
   SuffixTree_delete(&stree);
-  free(tour);
-  free(depths);
-  free(first_instances);
+  EulerTour_delete(&euler_tour);
   return NULL;
 }
 
@@ -80,18 +71,13 @@ char* test_random()
   for(i = 0; i < 25; i++) {
     random_string(str, str_len);
     SuffixTree_T stree = SuffixTree_create(str, str_len);
-    Node_T* tour;
-    SuffixTreeIndex_T* depths;
-    SuffixTreeIndex_T* first_instances;
-    euler_tour_arrays_create(stree, &tour, &depths, &first_instances);
+    EulerTour_T euler_tour = EulerTour_create(stree);
     
-    int ret = verify_rmq_arrays(stree, tour, depths, first_instances);
-    mu_assert(ret == 0, "Failed RMQ array verification.");
+    int ret = EulerTour_verify(euler_tour, stree);
+    mu_assert(ret == 0, "Euler tour verification failed.");
 
     SuffixTree_delete(&stree);
-    free(tour);
-    free(depths);
-    free(first_instances);
+    EulerTour_delete(&euler_tour);
   }
   free(str);
   return NULL;

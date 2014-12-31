@@ -7,97 +7,84 @@
 #define MAX(a,b) ((a) > (b) ? a : b)
 #define MIN(a,b) ((a) < (b) ? a : b)
 
-/*
- * Create the depth and first instance arrays that are used in the
- * constant-time lowest common ancestor algorithm. The depths array is the
- * depth of each node visited in an Euler tour of the suffix tree. The first
- * instances array gives the index in the depths array of the first instance of
- * a node. Depth and first instance arrays correspond to the L and R array
- * described in the paper above.
- *
- * Inputs:
- *  SuffixTree_T stree        :   Suffix tree on which we want to perform LCA
- *  size_t** tour             :   Node ids as visited in the tour
- *  size_t** depths           :   Depth array
- *  size_t** first_intances   :   First instance array
- * 
- * Outputs:
- *  None, but depths and first_instances are allocated, and the caller is
- *  responsible for freeing.
- */
-void euler_tour_arrays_create(const SuffixTree_T stree,
-                              Node_T** tour,
-                              size_t** depths,
-                              size_t** first_instances)
-{
-  /* The length of the Euler tour */
-  SuffixTreeIndex_T num_nodes = SuffixTree_get_num_nodes(stree);
-  size_t array_size = 2 * num_nodes - 1;
-  
-  *tour = calloc(array_size, sizeof(Node_T));
-  *depths = calloc(array_size, sizeof(size_t));
-  *first_instances = calloc(num_nodes, sizeof(size_t));
-  
-  size_t* pos_in_tour = calloc(1, sizeof(size_t));
-  euler_tour(SuffixTree_get_root(stree), 0, pos_in_tour, *tour,
-             *depths, *first_instances);
+/* A little helper struct for the Euler walk through the suffix tree. */
+struct EulerTourWalkData {
+  Node_T* nodes;
+  SuffixTreeIndex_T* depths;
+  size_t* first_instances;
+  size_t* pos_in_tour;
+};
 
-  free(pos_in_tour);
-}
-
-/*
- * Complete an Euler tour starting at a node. Record node depths and the first
- * instances of nodes during the tour. This is called by prepare_rmq_arrays,
- * starting with the root of the suffix tree.
- *
- * Inputs:
- *  NODE* node                :   Starting node
- *  size_t* pos_in_tour       :   Number of nodesh visited in the tour so far
- *  size_t* tour              :   Node ids array
- *  size_t* depths            :   Depths array
- *  size_t* first_instances   :   First instances array
- *
- * Outputs:
- *  None, but populates depths and first_instances.
- */
-void euler_tour(Node_T node, size_t depth, size_t* pos_in_tour,
-                Node_T* tour, size_t* depths, size_t* first_instances)
+/* The NodeFunc_T for the walk that will create the EulerTour_T. */
+SuffixTreeIndex_T euler_tour_node_func(SuffixTree_T tree,
+                                       Node_T node,
+                                       void* veuler_data,
+                                       SuffixTreeIndex_T depth)
 {
-  Node_T next_node = Node_get_child(node);
-  
-  tour[*pos_in_tour] = node;
-  depths[*pos_in_tour] = depth;
-  if(first_instances[Node_get_index(node)] == 0) {
-    first_instances[Node_get_index(node)] = *pos_in_tour;
-  }
-  (*pos_in_tour)++;
-    
-  if(next_node != 0) {
-    while(next_node != 0) {
-      euler_tour(next_node, depth + 1, pos_in_tour,
-                 tour, depths, first_instances); 
-      tour[*pos_in_tour] = node;
-      depths[*pos_in_tour] = depth;
-      (*pos_in_tour)++;
-      next_node = Node_get_sibling(next_node);
+  struct EulerTourWalkData* euler_data = veuler_data;
+  size_t pos_in_tour = *(euler_data->pos_in_tour);
+
+  euler_data->nodes[pos_in_tour] = node;
+  euler_data->depths[pos_in_tour] = depth;
+
+  if(euler_data->first_instances[Node_get_index(node)] == 0) {
+    if(SuffixTree_get_root(tree) != node) {
+      euler_data->first_instances[Node_get_index(node)] = *(euler_data->pos_in_tour);
     }
   }
+  (*euler_data->pos_in_tour)++;
+  
+  return depth + 1;
 }
 
-/*
- * Test the depth and first_instance arrays. Return 0 if tests pass, else 1.
- */
-int verify_rmq_arrays(const SuffixTree_T stree, Node_T* tour,
-                      const size_t* depths,
-                      const size_t* first_instances)
+EulerTour_T EulerTour_create(SuffixTree_T tree)
+{
+  EulerTour_T euler_tour = malloc(sizeof(struct EulerTour_T));
+  euler_tour->num_nodes = SuffixTree_get_num_nodes(tree);
+  euler_tour->length = 2 * SuffixTree_get_num_nodes(tree) - 1;
+
+  euler_tour->nodes = calloc(euler_tour->length, sizeof(Node_T));
+  euler_tour->depths = calloc(euler_tour->length, sizeof(SuffixTreeIndex_T));
+  euler_tour->first_instances = calloc(SuffixTree_get_num_nodes(tree),
+                                       sizeof(SuffixTreeIndex_T));
+  
+  size_t* pos_in_tour = calloc(1, sizeof(size_t));
+
+  struct EulerTourWalkData* euler_data = malloc(sizeof(struct EulerTourWalkData));
+  euler_data->nodes = euler_tour->nodes;
+  euler_data->depths = euler_tour->depths;
+  euler_data->first_instances = euler_tour->first_instances;
+  euler_data->pos_in_tour = pos_in_tour;
+
+  SuffixTree_euler_walk(tree, SuffixTree_get_root(tree),
+                        euler_tour_node_func, euler_data,
+                        0);
+
+  free(euler_data);
+  free(pos_in_tour);
+
+  return euler_tour;
+}
+
+void EulerTour_delete(EulerTour_T* euler_tour)
+{
+  if(*euler_tour) {
+    if((*euler_tour)->nodes) free((*euler_tour)->nodes);
+    if((*euler_tour)->depths) free((*euler_tour)->depths);
+    if((*euler_tour)->first_instances) free((*euler_tour)->first_instances);
+    free(*euler_tour);
+  }
+}
+
+int EulerTour_verify(EulerTour_T euler_tour, SuffixTree_T tree)
 {
   /* First verify that the depths array has the +-1 property */
   size_t i = 0;
-  SuffixTreeIndex_T num_nodes = SuffixTree_get_num_nodes(stree);
-  Node_T root = SuffixTree_get_root(stree);
+  SuffixTreeIndex_T num_nodes = SuffixTree_get_num_nodes(tree);
+  Node_T root = SuffixTree_get_root(tree);
 
-  for(i = 0; i < 2 * num_nodes - 2; i++) { /* Note - 2 not - 1 */
-    long int diff = depths[i] - depths[i + 1];
+  for(i = 0; i < euler_tour->length - 1; i++) {
+    long int diff = euler_tour->depths[i] - euler_tour->depths[i + 1];
     
     if(!labs(diff) == 1) {
       log_warn("Consecutive values in depth array do not differ by 1.");
@@ -107,23 +94,23 @@ int verify_rmq_arrays(const SuffixTree_T stree, Node_T* tour,
 
   /* Then check some properties of the tour. The first and last elements should
    * be the root. And, for A, B, C in the tour, if A == C, then B is a leaf in
-   * the tree, and the number of leaves is the lenght of the suffix tree
+   * the tree, and the number of leaves is the length of the suffix tree
    * string. */
-  if(tour[0] != root) {
+  if(euler_tour->nodes[0] != root) {
     log_warn("First element in tour is not the root.");
     return 1;
   }
-  if(tour[2 * num_nodes - 2] != root) {
+  if(euler_tour->nodes[euler_tour->length - 1] != root) {
     log_warn("Last element in tour is not the root.");
     return 1;
   }
   size_t leaf_count = 0;
-  for(i = 0; i < 2 * num_nodes - 3; i++) {
-    if(tour[i] == tour[i+2]) leaf_count++;
+  for(i = 0; i < euler_tour->length - 2; i++) {
+    if(euler_tour->nodes[i] == euler_tour->nodes[i+2]) leaf_count++;
   }
-  if(leaf_count != SuffixTree_get_string_length(stree)) {
+  if(leaf_count != SuffixTree_get_string_length(tree)) {
     log_warn("Number of leaves in tour, %zu, is not the length of the string, %zu",
-            leaf_count, SuffixTree_get_string_length(stree));
+            leaf_count, SuffixTree_get_string_length(tree));
     return 1;
   }
 
@@ -132,7 +119,7 @@ int verify_rmq_arrays(const SuffixTree_T stree, Node_T* tour,
    * we visit nodes in the same depth-first traversal, it should be true for
    * us. */
   for(i = 0; i < num_nodes - 1; i++) {
-    if(first_instances[i+1] <= first_instances[i]){
+    if(euler_tour->first_instances[i+1] <= euler_tour->first_instances[i]){
       log_warn("First instances is not increasing.");
       return 1;
     }
@@ -140,6 +127,24 @@ int verify_rmq_arrays(const SuffixTree_T stree, Node_T* tour,
 
   return 0;
 }
+
+void EulerTour_print(EulerTour_T euler_tour)
+{
+  printf("Euler tour:\n");
+  size_t i = 0;
+  for(i = 0; i < euler_tour->length; i++) {
+    printf("Position: %zu\tNode index: %lu\tDepth: %lu\n",
+           i, Node_get_index(euler_tour->nodes[i]),
+           euler_tour->depths[i]);
+  }
+
+  printf("\nFirst instances:\n");
+  for(i = 0; i < euler_tour->num_nodes; i++) {
+    printf("Node index: %lu\tFirst instance position: %zu\n",
+           i, euler_tour->first_instances[i]);
+  }
+}
+
 
 /*
  * Functions for partitioning the depth array. Per the LCA algorithm, it needs
