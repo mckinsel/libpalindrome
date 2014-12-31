@@ -38,12 +38,8 @@ struct LCASuffixTree_T {
   struct SuffixTree_T suffix_tree;
   
   /* The node ids as they're visited in the Euler tour. */
-  size_t  euler_tour_length;
-  Node_T* euler_tour_nodes;
-  size_t* euler_tour_depths;
 
-  /* Position of the first occurrence of each node id in euler_tour_depths. */
-  size_t* node_id_pos_in_tour;
+  EulerTour_T euler_tour;
   
   /* Euler tour depths is partitioned into blocks. block_minima contains the
    * minimum value each block.  */
@@ -75,30 +71,23 @@ LCASuffixTree_T LCASuffixTree_create(char* str, size_t length)
 
 
   /* First create the Euler tour */
-  euler_tour_arrays_create((SuffixTree_T)lca_suffix_tree, &lca_suffix_tree->euler_tour_nodes,
-                           &lca_suffix_tree->euler_tour_depths,
-                           &lca_suffix_tree->node_id_pos_in_tour);
-  check(lca_suffix_tree->euler_tour_nodes,
-        "Failed initialization of Euler tour nodes.");
-  check(lca_suffix_tree->euler_tour_depths,
-        "Failed initialization of Euler tour depths.");
-  check(lca_suffix_tree->node_id_pos_in_tour,
-        "Failed initializtion of Euler tour first instances.")
-  lca_suffix_tree->euler_tour_length = 2 * SuffixTree_get_num_nodes((SuffixTree_T)lca_suffix_tree) - 1;
+  lca_suffix_tree->euler_tour = EulerTour_create((SuffixTree_T)lca_suffix_tree);
+  check(lca_suffix_tree->euler_tour,
+        "Failed initialization of Euler tour.");
 
   /* Then create the arrays for block minima. */
   lca_suffix_tree->num_blocks = get_block_minima(
-      lca_suffix_tree->euler_tour_depths, lca_suffix_tree->euler_tour_length,
+      lca_suffix_tree->euler_tour->depths, lca_suffix_tree->euler_tour->length,
       &lca_suffix_tree->block_minima, &lca_suffix_tree->minima_positions);
   check(lca_suffix_tree->block_minima, "Failed block minimum array creation.");
   check(lca_suffix_tree->minima_positions, "Failed minimum position array creation.");
 
   /* Then create the sparse table for finding minima between blocks. */
   lca_suffix_tree->block_sparse_table = SparseTable_create(lca_suffix_tree->block_minima,
-                                                    lca_suffix_tree->num_blocks);
+                                                           lca_suffix_tree->num_blocks);
   
   /* Finally, create the RMQ database for the blocks. */
-  lca_suffix_tree->block_rmq_db = BRD_create(get_block_size(lca_suffix_tree->euler_tour_length));
+  lca_suffix_tree->block_rmq_db = BRD_create(get_block_size(lca_suffix_tree->euler_tour->length));
 
   return lca_suffix_tree;
 
@@ -110,10 +99,7 @@ error:
 void LCASuffixTree_delete(LCASuffixTree_T* lca_suffix_tree)
 {
  if(*lca_suffix_tree) {
-   if((*lca_suffix_tree)->euler_tour_nodes) free((*lca_suffix_tree)->euler_tour_nodes);
-   if((*lca_suffix_tree)->euler_tour_depths) free((*lca_suffix_tree)->euler_tour_depths);
-   if((*lca_suffix_tree)->node_id_pos_in_tour) free((*lca_suffix_tree)->node_id_pos_in_tour);
-
+   if((*lca_suffix_tree)->euler_tour) EulerTour_delete(&(*lca_suffix_tree)->euler_tour);
    if((*lca_suffix_tree)->block_minima) free((*lca_suffix_tree)->block_minima);
    if((*lca_suffix_tree)->minima_positions) free((*lca_suffix_tree)->minima_positions);
   
@@ -131,8 +117,8 @@ Node_T LCASuffixTree_get_lca(LCASuffixTree_T lca_suffix_tree, Node_T node1, Node
   size_t node_id1 = Node_get_index(node1);
   size_t node_id2 = Node_get_index(node2);
   /* First, we find a position of each requested node in the Euler tour arrays. */
-  size_t tour_pos_1 = lca_suffix_tree->node_id_pos_in_tour[node_id1];
-  size_t tour_pos_2 = lca_suffix_tree->node_id_pos_in_tour[node_id2];
+  size_t tour_pos_1 = lca_suffix_tree->euler_tour->first_instances[node_id1];
+  size_t tour_pos_2 = lca_suffix_tree->euler_tour->first_instances[node_id2];
 
   /* We'll need to know which one is first for some of the lookups to work
    * right. */
@@ -140,25 +126,25 @@ Node_T LCASuffixTree_get_lca(LCASuffixTree_T lca_suffix_tree, Node_T node1, Node
   size_t end_tour_pos = MAX(tour_pos_1, tour_pos_2);
 
   /* Now, we want to know which block each node position falls in. */
-  size_t block_index_1 = get_block_index(start_tour_pos, lca_suffix_tree->euler_tour_length);
-  size_t block_index_2 = get_block_index(end_tour_pos, lca_suffix_tree->euler_tour_length);
+  size_t block_index_1 = get_block_index(start_tour_pos, lca_suffix_tree->euler_tour->length);
+  size_t block_index_2 = get_block_index(end_tour_pos, lca_suffix_tree->euler_tour->length);
 
   /* And the position, within its block, of each node position. */
-  size_t pos_in_block_1 = get_pos_in_block(start_tour_pos, lca_suffix_tree->euler_tour_length);
-  size_t pos_in_block_2 = get_pos_in_block(end_tour_pos, lca_suffix_tree->euler_tour_length);
+  size_t pos_in_block_1 = get_pos_in_block(start_tour_pos, lca_suffix_tree->euler_tour->length);
+  size_t pos_in_block_2 = get_pos_in_block(end_tour_pos, lca_suffix_tree->euler_tour->length);
   
   /* Then get the blocks themselves. Note that these are block in the node
    * depths, not the node ids. block_size_[12] give the true size of each
    * block, which may be different if it's the last block. */
-  size_t* block_1 = calloc(get_block_size(lca_suffix_tree->euler_tour_length),
+  size_t* block_1 = calloc(get_block_size(lca_suffix_tree->euler_tour->length),
                            sizeof(size_t));
-  size_t block_size_1 = get_block(&block_1, block_index_1, lca_suffix_tree->euler_tour_depths,
-                                  lca_suffix_tree->euler_tour_length);
+  size_t block_size_1 = get_block(&block_1, block_index_1, lca_suffix_tree->euler_tour->depths,
+                                  lca_suffix_tree->euler_tour->length);
 
-  size_t* block_2 = calloc(get_block_size(lca_suffix_tree->euler_tour_length),
+  size_t* block_2 = calloc(get_block_size(lca_suffix_tree->euler_tour->length),
                            sizeof(size_t));
-  size_t block_size_2 = get_block(&block_2, block_index_2, lca_suffix_tree->euler_tour_depths,
-                                  lca_suffix_tree->euler_tour_length);
+  size_t block_size_2 = get_block(&block_2, block_index_2, lca_suffix_tree->euler_tour->depths,
+                                  lca_suffix_tree->euler_tour->length);
   
   /* The value we want to calculate is the position of the minimum value
    * between the node positions in the depth array. */ 
@@ -209,7 +195,7 @@ Node_T LCASuffixTree_get_lca(LCASuffixTree_T lca_suffix_tree, Node_T node1, Node
                              lca_suffix_tree->block_rmq_db->block_size +
                              lca_suffix_tree->minima_positions[min_between_block_index];
 
-      min_depth_between_blocks = lca_suffix_tree->euler_tour_depths[min_between_tour_pos];
+      min_depth_between_blocks = lca_suffix_tree->euler_tour->depths[min_between_tour_pos];
     } else {
       min_depth_between_blocks = (size_t)-1;
       min_between_tour_pos = (size_t)-1;
@@ -228,7 +214,7 @@ Node_T LCASuffixTree_get_lca(LCASuffixTree_T lca_suffix_tree, Node_T node1, Node
   }
   free(block_1);
   free(block_2);
-  return lca_suffix_tree->euler_tour_nodes[pos_of_min_depth];
+  return lca_suffix_tree->euler_tour->nodes[pos_of_min_depth];
 }
 
 /*
@@ -244,6 +230,13 @@ Node_T LCASuffixTree_get_lca(LCASuffixTree_T lca_suffix_tree, Node_T node1, Node
  */
 int LCASuffixTree_verify(LCASuffixTree_T lca_suffix_tree)
 {
+  /* First check that it's a correct SuffixTree_T. */
+  int st_ret_val = SuffixTree_verify((SuffixTree_T)lca_suffix_tree);
+  if(st_ret_val != 0) {
+    log_warn("lca_suffix_tree failed SuffixTree_verify.");
+    return 1;
+  }
+
   Node_T* node_array = SuffixTree_create_node_array((SuffixTree_T)lca_suffix_tree);
   
   /* Iterate over all possible node pairs. */
