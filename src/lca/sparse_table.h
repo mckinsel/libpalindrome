@@ -1,20 +1,18 @@
 #ifndef _sparse_table_H_
 #define _sparse_table_H_
-typedef struct
-{
-  size_t**  table;
-  size_t    nrows;
-  size_t    ncols;
-} SparseTable;
+
+typedef struct SparseTable_T* SparseTable_T;
 
 
-SparseTable* SparseTable_create(const size_t* array, size_t array_size);
+SparseTable_T SparseTable_create(const size_t* array, size_t array_size);
 
-void SparseTable_delete(SparseTable*);
+void          SparseTable_delete(SparseTable_T*);
 
-size_t SparseTable_lookup(const SparseTable* sparse_table, const size_t* array,
-                          size_t i, size_t j);
+size_t        SparseTable_lookup(SparseTable_T sparse_table,
+                                 const size_t* array,
+                                 size_t i, size_t j);
 
-int  SparseTable_verify(const SparseTable* sparse_table, const size_t* array,
-                        size_t array_size);
+int           SparseTable_verify(SparseTable_T sparse_table,
+                                 const size_t* array,
+                                 size_t array_size);
 #endif

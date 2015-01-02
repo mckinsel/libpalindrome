@@ -8,6 +8,12 @@
 #define MAX(a,b) ((a) > (b) ? a : b)
 #define MIN(a,b) ((a) < (b) ? a : b)
 
+struct SparseTable_T {
+  size_t**  table;
+  size_t    nrows;
+  size_t    ncols;
+};
+
 /* Create a SparseTable struct from an array.
  *
  * Inputs:
@@ -17,12 +23,11 @@
  * Outputs:
  *  SparseTable* sparse_table   :   SparseTabe RMQ struct
  */
-SparseTable* SparseTable_create(const size_t* array, size_t array_size)
+SparseTable_T SparseTable_create(const size_t* array, size_t array_size)
 {
-  SparseTable* sparse_table = NULL;
   check(array_size > 0, "Cannot create a sparse table from an empty array.");
 
-  sparse_table = malloc(sizeof(SparseTable));
+  SparseTable_T sparse_table = malloc(sizeof(struct SparseTable_T));
   check_mem(sparse_table);
 
   /* Get the size of the table. */
@@ -77,22 +82,24 @@ SparseTable* SparseTable_create(const size_t* array, size_t array_size)
   return sparse_table;
 
 error:
-  SparseTable_delete(sparse_table);
+  SparseTable_delete(&sparse_table);
   return NULL;
 }
 
 /* Free a SparseTable. */
-void SparseTable_delete(SparseTable* sparse_table)
+void SparseTable_delete(SparseTable_T* sparse_table)
 {
-  if(sparse_table) {
-    if(sparse_table->table) {
+  if(sparse_table == NULL) return;
+
+  if(*sparse_table) {
+    if((*sparse_table)->table) {
       size_t i = 0;
-      for(i = 0; i < sparse_table->nrows; i++) {
-        if(sparse_table->table[i]) free(sparse_table->table[i]);
+      for(i = 0; i < (*sparse_table)->nrows; i++) {
+        if((*sparse_table)->table[i]) free((*sparse_table)->table[i]);
       }
-      free(sparse_table->table);
+      free((*sparse_table)->table);
     }
-    free(sparse_table);
+    free(*sparse_table);
   }
 }
 
@@ -108,7 +115,7 @@ void SparseTable_delete(SparseTable* sparse_table)
  * Outputs:
  *  size_t min_pos    :   Position of minimum element in array[i:j]
  */ 
-size_t SparseTable_lookup(const SparseTable* sparse_table, 
+size_t SparseTable_lookup(SparseTable_T sparse_table,
                           const size_t* array,
                           size_t i, size_t j)
 {
@@ -144,7 +151,7 @@ error:
  *
  * Returns 0 if tests pass, else 1.
  */
-int SparseTable_verify(const SparseTable* sparse_table, const size_t* array,
+int SparseTable_verify(SparseTable_T sparse_table, const size_t* array,
                        size_t array_size)
 {
   size_t i = 0;
