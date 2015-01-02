@@ -55,32 +55,4 @@ int EulerTour_verify(EulerTour_T euler_tour, SuffixTree_T tree);
 /* Print the EulerTour_T to stdout. */
 void EulerTour_print(EulerTour_T euler_tour);
 
-/* 
- * Functions for partitioning the depth array into blocks. This is a key step
- * in the constant-time LCA algorithm, and the size of the blocks needs to be
- * log(n)/2.
- */
-
-/* Size of the blocks if the full array is of size n. */
-size_t get_block_size(size_t n);
-
-/* 
- * Number of blocks in array of size n, including possibly irregularly sized
- * final block.
- */
-size_t get_num_blocks(size_t n);
-
-/* Index of the block position pos in the array falls. */
-size_t get_block_index(size_t pos, size_t n);
-
-/* The position of pos in its block. */
-size_t get_pos_in_block(size_t pos, size_t n);
-
-/* Get the block itself, returning the block size. */
-size_t get_block(size_t** block, size_t block_index,
-                 const size_t* array, size_t array_size);
-
-/* Function to get block minima, the A` and B arrays from the paper. */
-size_t get_block_minima(const size_t* depths, size_t depths_size,
-                        size_t** block_minima, size_t** minima_positions);
 #endif
