@@ -8,7 +8,7 @@ char* test_array()
                  /* 0  1  2  3  4  5  6  7  8  9 */
   size_t arr_len = 10;
   
-  SparseTable* sparse_table = SparseTable_create(arr, arr_len);
+  SparseTable_T sparse_table = SparseTable_create(arr, arr_len);
   
   size_t val = 0;
   val = SparseTable_lookup(sparse_table, arr, 5, 7);
@@ -26,7 +26,7 @@ char* test_array()
   int ret = SparseTable_verify(sparse_table, arr, arr_len); 
   mu_assert(ret == 0, "SparseTable verification failed.");
 
-  SparseTable_delete(sparse_table);
+  SparseTable_delete(&sparse_table);
 
   return NULL;
 }
@@ -39,10 +39,10 @@ char* test_random_arrays()
   unsigned int i = 0;
   for(i = 0; i < 20; i++) {
     random_sizes(arr, arr_len);
-    SparseTable* sparse_table = SparseTable_create(arr, arr_len);
+    SparseTable_T sparse_table = SparseTable_create(arr, arr_len);
     int ret = SparseTable_verify(sparse_table, arr, arr_len); 
     mu_assert(ret == 0, "SparseTable verification failed on random array.");
-    SparseTable_delete(sparse_table);
+    SparseTable_delete(&sparse_table);
   }
   free(arr);
   return NULL;
