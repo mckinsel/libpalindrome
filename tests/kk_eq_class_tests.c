@@ -20,13 +20,12 @@
  */
 char* test_banana()
 {
-  SuffixTree_T stree = NULL;
-
   char str[] = "BANANA";
   size_t  str_len = sizeof(str) - 1;
   size_t substr_len = 3;
 
-  EquivClassTable_T eq_table = EquivClassTable_create(str, str_len, &stree, substr_len);
+  AugmentedString_T aug_string = AugmentedString_create(str, str_len);
+  EquivClassTable_T eq_table = EquivClassTable_create(aug_string, substr_len);
   
   mu_assert(EquivClassTable_forward_lookup(eq_table, 1) ==
             EquivClassTable_forward_lookup(eq_table, 3),
@@ -60,20 +59,19 @@ char* test_banana()
   mu_assert(rc == 0, "Failed equivalence class verification.");
 
   EquivClassTable_delete(&eq_table);
-  SuffixTree_delete(&stree);
+  AugmentedString_delete(&aug_string);
 
   return NULL;
 }
 
 char* test_eq_class_verification()
 {
-  SuffixTree_T stree = NULL;
-
   char str[] = "BANANA";
   size_t  str_len = sizeof(str) - 1;
   size_t substr_len = 3;
 
-  EquivClassTable_T eq_table = EquivClassTable_create(str, str_len, &stree, substr_len);
+  AugmentedString_T aug_string = AugmentedString_create(str, str_len);
+  EquivClassTable_T eq_table = EquivClassTable_create(aug_string, substr_len);
 
   EquivClassIndex_T* good_forward = malloc(sizeof(EquivClassIndex_T)*(str_len+1));
   EquivClassIndex_T* good_reverse = malloc(sizeof(EquivClassIndex_T)*(str_len+1));
@@ -96,7 +94,7 @@ char* test_eq_class_verification()
   EquivClassTable_delete(&eq_table);
   free(good_forward);
   free(good_reverse);
-  SuffixTree_delete(&stree);
+  AugmentedString_delete(&aug_string);
 
   return NULL;
 }
@@ -107,7 +105,7 @@ char* test_random_strings()
   char* str = calloc((str_len + 1), sizeof(char));
   size_t substr_len;
 
-  SuffixTree_T stree = NULL;
+  AugmentedString_T aug_string = NULL;
   EquivClassTable_T eq_table = NULL;
 
   int ret = 0;
@@ -116,14 +114,15 @@ char* test_random_strings()
     random_string(str, str_len);
     substr_len = rand() % 100;
 
-    eq_table = EquivClassTable_create(str, str_len, &stree, substr_len);
+    aug_string = AugmentedString_create(str, str_len);
+    eq_table = EquivClassTable_create(aug_string, substr_len);
 
     ret = EquivClassTable_verify(str, str_len, eq_table, substr_len);
 
     mu_assert(ret == 0, "Failed equivalence class verification.");
 
     EquivClassTable_delete(&eq_table);
-    SuffixTree_delete(&stree);
+    AugmentedString_delete(&aug_string);
   }
   
   free(str);
