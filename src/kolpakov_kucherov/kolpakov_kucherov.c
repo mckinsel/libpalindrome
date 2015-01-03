@@ -12,9 +12,11 @@ void length_constrained_palindromes(char* query_string, size_t query_length,
                                     size_t min_arm_length, size_t min_gap_length,
                                     size_t max_gap_length)
 {
-  SuffixTree_T stree = NULL;
-  EquivClassTable_T eq_table = EquivClassTable_create(query_string, query_length,
-                                                      &stree, min_arm_length);
+  /* Augment the string with a suffix tree of the string plus its reverse. */
+  AugmentedString_T aug_string = AugmentedString_create(query_string, query_length);
+
+  EquivClassTable_T eq_table = EquivClassTable_create(aug_string,
+                                                      min_arm_length);
   
   EquivClassIndex_T num_classes = EquivClassTable_num_classes(eq_table);
 
@@ -58,18 +60,20 @@ void length_constrained_palindromes(char* query_string, size_t query_length,
      * iteration. */
     while(search_item && search_item->position <= j - min_gap_length) {
       if(query_string[search_item->position] != query_string[j - 1]) {
-        /* TODO: Find the longest common prefix and save the palindrome */
-        printf("Palindrome at %zu - %zu\n", j, search_item->position);
+        size_t pal_length = AugmentedString_common_prefix_suffix_length(
+            aug_string, search_item->position - 1, j);
+        printf("Palindrome at %zu - %zu, %zu\n", search_item->position, j, pal_length);
+        printf("Palindrome bounds: (%zu-%zu), (%zu-%zu)\n",
+               search_item->position - pal_length, search_item->position,
+               j, j + pal_length);
       }
       search_item = search_item->next_run;
     }
   }
 
   EquivClassArray_delete(&eq_array);
-  //free(forward_table);
-  //free(reverse_table);
   EquivClassTable_delete(&eq_table);
-  SuffixTree_delete(&stree);
+  AugmentedString_delete(&aug_string);
 
 }
 
