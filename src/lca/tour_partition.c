@@ -23,6 +23,7 @@
  */
 size_t get_block_size(size_t n)
 {
+  if(n == 1) return 1;
   return (size_t)ceil(log2(n)/2);
 }
 
@@ -44,6 +45,11 @@ size_t get_num_blocks(size_t n)
 /* Create a partition. */
 TourPartition_T TourPartition_create(const size_t* values, size_t values_length)
 {
+  if(values_length == 0) {
+    log_warn("Cannot partition an empty array of values.");
+    return NULL;
+  }
+
   TourPartition_T tour_partition = calloc(1, sizeof(struct TourPartition_T));
   tour_partition->num_blocks = get_num_blocks(values_length);
   tour_partition->block_length = get_block_size(values_length);
