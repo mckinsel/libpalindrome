@@ -41,9 +41,9 @@ build:
 
 .PHONY: test
 ifeq "$(ENABLE_COVERAGE)" "true"
-test: LDLIBS += $(TARGET) -fprofile-arcs -lm
+test: LDLIBS += $(TARGET) -fprofile-arcs -lm -ldl
 else
-test: LDLIBS += $(SO_TARGET)
+test: LDLIBS += $(SO_TARGET) -ldl
 endif
 test: $(TESTS)
 		sh ./tests/runtests.sh
