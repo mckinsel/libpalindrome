@@ -8,6 +8,16 @@ char* test_banana()
   char str[] = "BANANA";
   size_t str_len = sizeof(str) - 1;
   LCASuffixTree_T tree = LCASuffixTree_create(str, str_len);
+
+  SuffixTree_print((SuffixTree_T)tree);
+  Node_T* leaf_array = SuffixTree_create_leaf_array((SuffixTree_T)tree);
+  size_t i = 0;
+  for(i = 0; i < str_len; i++) {
+    Node_T leaf = leaf_array[i];
+    printf("Position: %zu Node index: %zu\n", i, Node_get_index(leaf));
+  }
+  free(leaf_array);
+
   Node_T* node_array = SuffixTree_create_node_array((SuffixTree_T)tree);
   
   Node_T lca = LCASuffixTree_get_lca(tree, node_array[9], node_array[7]);
@@ -32,6 +42,25 @@ char* test_banana()
   return NULL;
 }
 
+char* test_banana_with_reverse()
+{
+  char str[] = "BANANA#ANANAB";
+  size_t str_len = sizeof(str) - 1;
+  LCASuffixTree_T tree = LCASuffixTree_create(str, str_len);
+
+  SuffixTree_print((SuffixTree_T)tree);
+  Node_T* leaf_array = SuffixTree_create_leaf_array((SuffixTree_T)tree);
+  size_t i = 0;
+  for(i = 0; i < str_len; i++) {
+    Node_T leaf = leaf_array[i];
+    printf("Position: %zu Node index: %zu\n", i, Node_get_index(leaf));
+  }
+  free(leaf_array);
+
+  LCASuffixTree_delete(&tree);
+
+  return NULL;
+}
 char* test_random()
 {
   const size_t str_len = 700;
@@ -57,7 +86,8 @@ char* all_tests()
   mu_suite_start();
 
   mu_run_test(test_banana);
-  mu_run_test(test_random);
+  mu_run_test(test_banana_with_reverse);
+  /*mu_run_test(test_random);*/
 
   return NULL;
 }
