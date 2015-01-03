@@ -151,7 +151,8 @@ Array_T EquivClassArray_add(Array_T array, size_t equiv_class_index, size_t posi
   check(query_string,
         "Attempting to add item to an EquivClassArray_T with a NULL query_string.");
   check(equiv_class_index < array->num_equiv_classes,
-        "equiv_class_index is greater than number of equiv classes in the array.");
+        "equiv_class_index %zu is greater than number of equiv classes in the array %zu.",
+        equiv_class_index, array->num_equiv_classes);
   
   List_T list = array->equiv_class_lists[equiv_class_index];
   Item_T previous_last_item = list->last_item;
