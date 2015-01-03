@@ -41,7 +41,9 @@ struct Node_T
    /* End index of the incoming edge */
    SuffixTreeIndex_T                 edge_label_end;
    /* An index for the node */
-   SuffixTreeIndex_T                index;
+   SuffixTreeIndex_T                 index;
+   /* The length of the path to the root. */
+   SuffixTreeIndex_T                 edge_depth;
 };
 
 struct SuffixTree_T
@@ -549,13 +551,21 @@ void SPA(SuffixTree_T tree, struct SuffixTreePos* pos,
    return;
 }
 
-void label_nodes(Node_T node, SuffixTreeIndex_T* label)
+void label_nodes(Node_T node, SuffixTree_T tree,
+                 SuffixTreeIndex_T* label,
+                 SuffixTreeIndex_T edge_depth)
 {
+  size_t edge_length = 0;
+  if(SuffixTree_get_root(tree) != node) {
+    edge_length = Node_get_incoming_edge_length(node, tree);
+  }
+  node->edge_depth = edge_depth + edge_length;
+
   node->index = *label;
   (*label)++;
   Node_T next_node = node->left_son;
   while(next_node != NULL) {
-    label_nodes(next_node, label);
+    label_nodes(next_node, tree, label, edge_depth + edge_length);
     next_node = next_node->right_sibling;
   }
 }
@@ -582,7 +592,7 @@ SuffixTree_T SuffixTree_create(char* str, size_t length)
 
    memcpy(tree->tree_string+sizeof(char),str,length*sizeof(char));
 
-   tree->tree_string[tree->length] = '\0';
+   tree->tree_string[tree->length] = '$';
    
    /* Allocating the tree root node */
    tree->root = create_node(0, 0, 0, 0);
@@ -608,7 +618,7 @@ SuffixTree_T SuffixTree_create(char* str, size_t length)
    }
 
    SuffixTreeIndex_T counter = 0;
-   label_nodes(tree->root, &counter);
+   label_nodes(tree->root, tree, &counter, 0);
    tree->num_nodes = counter;
    return tree;
 
@@ -666,7 +676,8 @@ void SuffixTree_print_node(SuffixTree_T tree, Node_T node1, long depth)
          start++;
       }
 
-      printf("\t%zu\t%ld\t%ld\t%ld", node1->index, orig_start, end, node1->path_position);
+      printf("\t%zu\t%ld\t%ld\t%ld\t%ld", node1->index, orig_start,
+             end, node1->path_position, node1->edge_depth);
       printf("\n");
    }
    /* Recoursive call for all node1's sons */
@@ -680,11 +691,11 @@ void SuffixTree_print_node(SuffixTree_T tree, Node_T node1, long depth)
 void SuffixTree_print(SuffixTree_T tree)
 {
    printf("\ntree_string: %.*s\n", (int)tree->length, tree->tree_string + 1);
+   printf("Index EdgeStart EdgeEnd PathPosition EdgeDepth\n");
    printf("\nroot\n");
    SuffixTree_print_node(tree, tree->root, 0);
    printf("\nSuffix tree of string of length %zd with %zd nodes.\n",
           tree->length, tree->num_nodes);
-   printf("Index EdgeStart EdgeEnd PathPosition\n");
 }
 
 int SuffixTree_verify(SuffixTree_T tree)
@@ -752,7 +763,7 @@ SuffixTreeIndex_T leaf_array_node_func(SuffixTree_T tree, Node_T node, void* vle
   if(node == SuffixTree_get_root(tree)) return 0;
 
   size_t edge_length = Node_get_incoming_edge_length(node, tree);
-  size_t current_suf_length = prev_suf_length + edge_length + 1;
+  size_t current_suf_length = prev_suf_length + edge_length;
 
   Node_T* leaf_array = vleaf_array;
   if(Node_is_leaf(node, tree)) {
@@ -793,7 +804,7 @@ int SuffixTree_verify_leaf_array(SuffixTree_T tree, const Node_T* leaf_array)
     while(Node_get_parent(node) != 0) {
       incoming_edge_length = Node_get_incoming_edge_length(node, tree);
       /* Stop when we reach the edge to the root */
-      suffix_depth += incoming_edge_length + 1;
+      suffix_depth += incoming_edge_length;
       node = Node_get_parent(node);
     }
 
@@ -850,7 +861,7 @@ SuffixTreeIndex_T SuffixTree_get_num_nodes(SuffixTree_T tree)
 
 SuffixTreeIndex_T Node_get_incoming_edge_length(Node_T node, SuffixTree_T tree)
 {
-  return get_node_label_end(tree, node) - node->edge_label_start;
+  return get_node_label_end(tree, node) - node->edge_label_start + 1;
 }
 
 int Node_is_leaf(Node_T node, SuffixTree_T tree) {
@@ -875,4 +886,9 @@ Node_T Node_get_sibling(Node_T node)
 Node_T Node_get_parent(Node_T node)
 {
   return node->father;
+}
+
+SuffixTreeIndex_T Node_get_edge_depth(Node_T node)
+{
+  return node->edge_depth;
 }

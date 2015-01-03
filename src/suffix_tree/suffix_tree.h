@@ -216,4 +216,5 @@ Node_T Node_get_parent(Node_T node);
  */
 SuffixTreeIndex_T Node_get_index(Node_T node);
 
+SuffixTreeIndex_T Node_get_edge_depth(Node_T node);
 #endif
