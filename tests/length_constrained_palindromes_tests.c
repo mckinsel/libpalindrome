@@ -5,11 +5,11 @@
 
 char* test_madam_im_adam()
 {
-
+            /*  012345678901234 */
   char str[] = "MADAMIBCDEMADAM";
   size_t str_len = sizeof(str)/sizeof(char);
   
-  length_constrained_palindromes(str, str_len, 3, 2, 5);
+  length_constrained_palindromes(str, str_len - 1, 3, 2, 5);
 
   return NULL;
 }
