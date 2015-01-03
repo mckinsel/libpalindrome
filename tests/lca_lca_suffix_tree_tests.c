@@ -8,6 +8,8 @@ char* test_banana()
   char str[] = "BANANA";
   size_t str_len = sizeof(str) - 1;
   LCASuffixTree_T tree = LCASuffixTree_create(str, str_len);
+  int retval = LCASuffixTree_verify(tree);
+  mu_assert(retval == 0, "Failed LCASuffixTree verification for BANANA.");
 
   SuffixTree_print((SuffixTree_T)tree);
   Node_T* leaf_array = SuffixTree_create_leaf_array((SuffixTree_T)tree);
@@ -87,7 +89,7 @@ char* all_tests()
 
   mu_run_test(test_banana);
   mu_run_test(test_banana_with_reverse);
-  /*mu_run_test(test_random);*/
+  mu_run_test(test_random);
 
   return NULL;
 }
