@@ -599,6 +599,7 @@ SuffixTree_T SuffixTree_create(char* str, size_t length)
    check_mem(tree->root);
 
    tree->root->suffix_link = NULL;
+   tree->e = 0;
 
    /* Initializing algorithm parameters */
    extension = 2;
