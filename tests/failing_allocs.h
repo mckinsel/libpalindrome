@@ -163,6 +163,12 @@ void* _malloc(size_t size)
    */
   static int getting_backtrace = 0;
   
+  /*
+   * Keep track of whether the function has received the free and stop failing
+   * signal.
+   */
+  static int stop_failing = 0;
+
   /* Get the stdlib version of malloc. */
   void* (*stdlib_malloc)(size_t) = dlsym(RTLD_NEXT, "malloc");
   
@@ -171,6 +177,12 @@ void* _malloc(size_t size)
    * backtrace, just behave like the stdlib malloc.
    */
   if(getting_backtrace) return stdlib_malloc(size);
+
+  /*
+   * If the function has received the -1 free and stop signal, then behave like
+   * the stdlib malloc.
+   */
+  if(stop_failing) return stdlib_malloc(size);
 
   /* Initialize the stack_db if it has not yet been initialized. */
   if(stack_db == NULL) {
@@ -183,6 +195,7 @@ void* _malloc(size_t size)
    */ 
   if(size == (size_t)-1) {
     if(stack_db) FailStackDB_delete(stack_db);
+    stop_failing = 1;
     return NULL;
   }
 
@@ -228,10 +241,18 @@ void* _realloc(void* ptr, size_t size)
   /* As in _malloc, keep track of observed backtraces. */
   static FailStackDB_T* stack_db = NULL;
   
+  /*
+   * As in _malloc, keep track of whether the free and stop failing signal has
+   * been received.
+   */
+  static int stop_failing = 0;
+
   /* Get names for stdlib malloc and realloc. */
   void* (*stdlib_malloc)(size_t) = dlsym(RTLD_NEXT, "malloc");
   void* (*stdlib_realloc)(void*, size_t) = dlsym(RTLD_NEXT, "realloc");
-  
+
+  if(stop_failing) return stdlib_realloc(ptr, size);
+
   if(stack_db == NULL) {
     stack_db = FailStackDB_create(compare_backtraces);
   }
@@ -239,6 +260,7 @@ void* _realloc(void* ptr, size_t size)
   /* Use the same sentinel value as malloc for freeing the stack_db. */ 
   if(size == (size_t)-1) {
     if(stack_db) FailStackDB_delete(stack_db);
+    stop_failing = 1;
     return NULL;
   }
   
