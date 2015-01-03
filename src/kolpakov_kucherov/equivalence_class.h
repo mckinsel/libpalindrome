@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "suffix_tree/suffix_tree.h"
+#include "augmented_string.h"
 
 #define Index_T EquivClassIndex_T
 #define Table_T EquivClassTable_T
@@ -11,10 +12,8 @@
 typedef size_t Index_T;
 typedef struct Table_T* Table_T; 
 
-Table_T EquivClassTable_create(char*         query_string,
-                               Index_T       query_length,
-                               SuffixTree_T* suffix_tree,
-                               Index_T       substr_length);
+Table_T EquivClassTable_create(AugmentedString_T augmented_string,
+                               Index_T substr_length);
 
 void    EquivClassTable_delete(Table_T* table);
 

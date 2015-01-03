@@ -1,6 +1,6 @@
 #include "equivalence_class.h"
 #include "dbg.h"
-#include "kolpakov_kucherov/utils.h"
+#include "augmented_string.h"
 
 #define Index_T EquivClassIndex_T
 #define Table_T EquivClassTable_T
@@ -36,7 +36,7 @@ size_t annotate_substr_node_func(const SuffixTree_T stree, const Node_T node,
   if(node == SuffixTree_get_root(stree)) return 0;
   struct SubstrClassDFS* dfs_data = data;
   size_t edge_length = Node_get_incoming_edge_length(node, stree);
-  size_t current_suf_length = prev_suf_length + edge_length + 1;
+  size_t current_suf_length = prev_suf_length + edge_length;
 
   if(current_suf_length >= dfs_data->substr_length &&
       prev_suf_length < dfs_data->substr_length) {
@@ -208,20 +208,18 @@ struct Table_T {
  *
  */
 
-Table_T EquivClassTable_create(char*         query_string,
-                               Index_T       query_length,
-                               SuffixTree_T* suffix_tree,
-                               Index_T       substr_length)
+Table_T EquivClassTable_create(AugmentedString_T augmented_string,
+                               Index_T substr_length)
 {
   Table_T table = calloc(1, sizeof(struct Table_T));
   check_mem(table);
+  size_t query_length = AugmentedString_get_query_length(augmented_string);
   table->query_length = query_length;
 
-  char* query_plus_reverse = append_reverse(query_string, query_length);
-  size_t qpr_length = QPR_LENGTH(query_length);
-  *suffix_tree = SuffixTree_create(query_plus_reverse, qpr_length);
-  size_t* substr_classes = annotate_substr_classes(qpr_length, substr_length,
-                                                   *suffix_tree);
+  size_t* substr_classes = annotate_substr_classes(
+      AugmentedString_get_augmented_length(augmented_string),
+      substr_length,
+      (SuffixTree_T)AugmentedString_get_tree(augmented_string));
 
 
   table->forward_classes = calloc(query_length + 1, sizeof(Index_T));
@@ -235,7 +233,6 @@ Table_T EquivClassTable_create(char*         query_string,
     (table->reverse_classes)[query_length - i] = substr_classes[query_length + i + 1];
   }
   
-  free(query_plus_reverse);
   free(substr_classes);
   
   return table;
