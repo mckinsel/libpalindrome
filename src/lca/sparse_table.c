@@ -26,8 +26,9 @@ struct SparseTable_T {
 SparseTable_T SparseTable_create(const size_t* array, size_t array_size)
 {
   check(array_size > 0, "Cannot create a sparse table from an empty array.");
+  SparseTable_T sparse_table = NULL;
 
-  SparseTable_T sparse_table = malloc(sizeof(struct SparseTable_T));
+  sparse_table = malloc(sizeof(struct SparseTable_T));
   check_mem(sparse_table);
 
   /* Get the size of the table. */
