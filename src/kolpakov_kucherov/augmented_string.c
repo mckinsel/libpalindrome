@@ -65,6 +65,7 @@ void AugmentedString_delete(AugmentedString_T* aug_string)
   
   if(*aug_string) {
     LCASuffixTree_delete(&(*aug_string)->tree);
+    if((*aug_string)->leaf_array) free((*aug_string)->leaf_array);
     free(*aug_string);
   }
 }
