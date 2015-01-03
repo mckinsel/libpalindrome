@@ -1,6 +1,6 @@
 #include "minunit.h"
 #include "test_utils.h"
-#include "manacher.h"
+#include "manacher/manacher.h"
 
 char* test_panama()
 {
@@ -49,13 +49,25 @@ char* test_verification()
 {
   char str[] = "ACBBCAAAA";
   size_t str_len = sizeof(str) - 1;
-
-  size_t radii[] = {0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0,
-                    1, 1, 2, 1, 1, 0, 0};
+                 /* 0  1  2  3  4  5  6  7  8  9 */
+  size_t radii[] = {0, 0, 0, 0, 0, 0, 3, 0, 0, 0,
+                    0, 0, 1, 1, 2, 1, 1, 0, 0};
   
   int rc = verify_palindrome_radii(str, str_len, radii);
   mu_assert(rc == 0, "Failed verification for correct radii");
 
+  radii[0] = 1;
+  fprintf(stderr, "Expect a warning about a non-zero first element here:\n");
+  rc = verify_palindrome_radii(str, str_len, radii);
+  mu_assert(rc == 1, "Verification didn't fail on non-zero first element.");
+
+  radii[0] = 0;
+  radii[18] = 1;
+  fprintf(stderr, "Expect a warning about a non-zero last element here:\n");
+  rc = verify_palindrome_radii(str, str_len, radii);
+  mu_assert(rc == 1, "Verification didn't fail on non-zero last element.");
+
+  radii[18] = 0;
   radii[6] = 2;
   fprintf(stderr, "Expect a warning about a non-maximal palindrome here:\n");
   rc = verify_palindrome_radii(str, str_len, radii);
