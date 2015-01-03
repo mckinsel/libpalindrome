@@ -159,12 +159,13 @@ Node_T apply_extension_rule_2(Node_T node, SuffixTreeIndex_T edge_label_begin,
                               SuffixTreeIndex_T path_pos, SuffixTreeIndex_T edge_pos,
                               Rule2_T type)
 {
-   Node_T new_leaf, new_internal, son;
+   Node_T new_leaf = NULL, new_internal = NULL, son;
    /*-------new_son-------*/
    if(type == new_son)                                       
    {
       /* Create a new leaf (4) with the characters of the extension */
       new_leaf = create_node(node, edge_label_begin, edge_label_end, path_pos);
+      check(new_leaf, "Could not create node.");
       /* Connect new_leaf (4) as the new son of node (1) */
       son = node->left_son;
       while(son->right_sibling != NULL)
@@ -180,6 +181,7 @@ Node_T apply_extension_rule_2(Node_T node, SuffixTreeIndex_T edge_label_begin,
                       node->edge_label_start,
                       node->edge_label_start+edge_pos,
                       node->path_position);
+    check(new_internal, "Could not create node.");
    /* Update the node (1) incoming edge starting index (it now starts where node
    (3) incoming edge ends) */
    node->edge_label_start += edge_pos+1;
@@ -190,6 +192,7 @@ Node_T apply_extension_rule_2(Node_T node, SuffixTreeIndex_T edge_label_begin,
                       edge_label_begin,
                       edge_label_end,
                       path_pos);
+   check(new_leaf, "Could not create node.");
    
    /* Connect new_internal (3) where node (1) was */
    /* Connect (3) with (1)'s left sibling */
@@ -208,6 +211,11 @@ Node_T apply_extension_rule_2(Node_T node, SuffixTreeIndex_T edge_label_begin,
    connect_siblings(node, new_leaf);
    /* return (3) */
    return new_internal;
+
+error:
+   if(new_leaf) free(new_leaf);
+   if(new_internal) free(new_internal);
+   return NULL;
 }
 
 Node_T trace_single_edge(SuffixTree_T tree, Node_T node, struct SuffixTreePath str,
@@ -405,12 +413,12 @@ void create_suffix_link(Node_T node, Node_T link)
    node->suffix_link = link;
 }
 
-void SEA(SuffixTree_T tree, struct SuffixTreePos* pos,
+int SEA(SuffixTree_T tree, struct SuffixTreePos* pos,
          struct SuffixTreePath str, SuffixTreeIndex_T* rule_applied,
          char after_rule_3)
 {
    SuffixTreeIndex_T   chars_found = 0 , path_pos = str.begin;
-   Node_T      tmp;
+   Node_T tmp = NULL;
  
    /* Follow suffix link only if it's not the first extension after rule 3 was applied */
    if(after_rule_3 == 0)
@@ -468,7 +476,7 @@ void SEA(SuffixTree_T tree, struct SuffixTreePos* pos,
       #ifdef DEBUG   
          printf("rule 3 (%zu,%zu)\n",str.begin,str.end);
       #endif
-      return;
+      return 0;
    }
    
    /* If last char found is the last char of an edge - add a character at the 
@@ -480,7 +488,8 @@ void SEA(SuffixTree_T tree, struct SuffixTreePos* pos,
       {
          /* Apply extension rule 2 new son - a new leaf is created and returned 
             by apply_extension_rule_2 */
-         apply_extension_rule_2(pos->node, str.begin+chars_found, str.end, path_pos, 0, new_son);
+         tmp = apply_extension_rule_2(pos->node, str.begin+chars_found, str.end, path_pos, 0, new_son);
+         check(tmp, "Could not apply extension rule 2.");
          *rule_applied = 2;
          /* If there is an internal node that has no suffix link yet (only one 
             may exist) - create a suffix link from it to the father-node of the 
@@ -498,6 +507,7 @@ void SEA(SuffixTree_T tree, struct SuffixTreePos* pos,
       /* Apply extension rule 2 split - a new node is created and returned by 
          apply_extension_rule_2 */
       tmp = apply_extension_rule_2(pos->node, str.begin+chars_found, str.end, path_pos, pos->edge_pos, split);
+      check(tmp, "Could not apply extension rule 2.");
       if(suffixless != NULL)
          create_suffix_link(suffixless, tmp);
       /* Link root's sons with a single character to the root */
@@ -515,9 +525,13 @@ void SEA(SuffixTree_T tree, struct SuffixTreePos* pos,
       pos->node = tmp;
       *rule_applied = 2;
    }
+   return 0;
+
+error:
+   return 1;
 }
 
-void SPA(SuffixTree_T tree, struct SuffixTreePos* pos,
+int SPA(SuffixTree_T tree, struct SuffixTreePos* pos,
          SuffixTreeIndex_T phase, SuffixTreeIndex_T* extension,
          char* repeated_extension)
 {
@@ -536,7 +550,8 @@ void SPA(SuffixTree_T tree, struct SuffixTreePos* pos,
       str.end         = phase+1;
       
       /* Call Single-Extension-Algorithm */
-      SEA(tree, pos, str, &rule_applied, *repeated_extension);
+      int ret_val = SEA(tree, pos, str, &rule_applied, *repeated_extension);
+      check(ret_val == 0, "Single Extension Algorithm failed.");
       /* Check if rule 3 was applied for the current extension */
       if(rule_applied == 3)
       {
@@ -548,7 +563,10 @@ void SPA(SuffixTree_T tree, struct SuffixTreePos* pos,
       *repeated_extension = 0;
       (*extension)++;
    }
-   return;
+   return 0;
+
+error:
+   return 1;
 }
 
 void label_nodes(Node_T node, SuffixTree_T tree,
@@ -583,6 +601,8 @@ SuffixTree_T SuffixTree_create(char* str, size_t length)
    tree = malloc(sizeof(struct SuffixTree_T));
    check_mem(tree);
 
+   tree->root = NULL;
+
    /* Calculating string length (with an ending terminator) */
    tree->length = length+1;
    
@@ -596,7 +616,7 @@ SuffixTree_T SuffixTree_create(char* str, size_t length)
    
    /* Allocating the tree root node */
    tree->root = create_node(0, 0, 0, 0);
-   check_mem(tree->root);
+   check(tree->root, "Creation of tree root failed.");
 
    tree->root->suffix_link = NULL;
    tree->e = 0;
@@ -607,16 +627,20 @@ SuffixTree_T SuffixTree_create(char* str, size_t length)
    
    /* Allocating first node, son of the root (phase 0), the longest path node */
    tree->root->left_son = create_node(tree->root, 1, tree->length, 1);
+   check(tree->root->left_son, "Node creation failed.");
+
    suffixless       = NULL;
    pos.node         = tree->root;
    pos.edge_pos     = 0;
 
    /* Ukkonen's algorithm begins here */
+   int success = 0;
    for(; phase < tree->length; phase++)
    {
       /* Perform Single Phase Algorithm */
-      SPA(tree, &pos, phase, &extension, &repeated_extension);
+      success = SPA(tree, &pos, phase, &extension, &repeated_extension);
    }
+   check(success == 0, "Ukkonen's suffix tree construction algorithm failed.");
 
    SuffixTreeIndex_T counter = 0;
    label_nodes(tree->root, tree, &counter, 0);
@@ -624,9 +648,7 @@ SuffixTree_T SuffixTree_create(char* str, size_t length)
    return tree;
 
 error:
-   if(tree->tree_string) free(tree->tree_string);
-   if(tree->root) free(tree->root);
-   if(tree) free(tree);
+   SuffixTree_delete(&tree);
    return NULL;
 }
 
@@ -647,6 +669,7 @@ void SuffixTree_delete_subtree(Node_T node)
 
 void SuffixTree_delete(SuffixTree_T* tree)
 {
+   if(!tree) return;
    if(*tree == NULL)
       return;
    SuffixTree_delete_subtree((*tree)->root);
