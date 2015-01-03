@@ -158,11 +158,13 @@ int TourPartition_verify(TourPartition_T tour_partition, const size_t* values,
 
     if(i != tour_partition->num_blocks - 1) {
       if(block_counts[i] != tour_partition->block_length) {
+        free(block_counts);
         log_warn("Non-final block has an incorrect length.");
         return 1;
       }
     } else {
       if(block_counts[i] == 0) {
+        free(block_counts);
         log_warn("Empty final block.");
         return 1;
       }
@@ -170,6 +172,7 @@ int TourPartition_verify(TourPartition_T tour_partition, const size_t* values,
   }
 
   if(running_position_sum != values_length) {
+    free(block_counts);
     log_warn("Total block assignments does not equal size of input array.");
     return 1;
   }
@@ -192,6 +195,8 @@ int TourPartition_verify(TourPartition_T tour_partition, const size_t* values,
     }
     if(min_pos != tour_partition->minima_positions[i]) {
       log_warn("Incorrect minimum position in block %zu.", i);
+      free(block);
+      return 1;
     }
   }
   free(block);
