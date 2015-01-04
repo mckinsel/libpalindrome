@@ -73,6 +73,17 @@ char* test_eq_class_verification()
   AugmentedString_T aug_string = AugmentedString_create(str, str_len);
   EquivClassTable_T eq_table = EquivClassTable_create(aug_string, substr_len);
 
+  /* Check that out of bounds lookups return -1. */
+  fprintf(stderr, "Expect eq_class out-of-bounds warning:\n");
+  size_t lookup = EquivClassTable_forward_lookup(eq_table, 7);
+  mu_assert(lookup == (EquivClassIndex_T)-1,
+            "Out-of-bounds lookup did not return error but %zu.", lookup);
+
+  fprintf(stderr, "Expect eq_class out-of-bounds warning:\n");
+  lookup = EquivClassTable_reverse_lookup(eq_table, 7);
+  mu_assert(lookup == (EquivClassIndex_T)-1,
+            "Out-of-bounds lookup did not return error but %zu.", lookup);
+
   EquivClassIndex_T* good_forward = malloc(sizeof(EquivClassIndex_T)*(str_len+1));
   EquivClassIndex_T* good_reverse = malloc(sizeof(EquivClassIndex_T)*(str_len+1));
   
@@ -83,14 +94,32 @@ char* test_eq_class_verification()
   fprintf(stderr, "Expect eq_class warning:\n");
   int ret = EquivClassTable_verify(str, str_len, eq_table, substr_len);
   mu_assert(ret == 1, "equivalence class marked incorrect classes as correct.");
-
   memcpy(eq_table->forward_classes, good_forward, sizeof(EquivClassIndex_T)*(str_len+1));
   
+  eq_table->forward_classes[5] = 1;
+  fprintf(stderr, "Expect eq_class warning:\n");
+  ret = EquivClassTable_verify(str, str_len, eq_table, substr_len);
+  mu_assert(ret == 1, "equivalence class marked incorrect classes as correct.");
+  memcpy(eq_table->forward_classes, good_forward, sizeof(EquivClassIndex_T)*(str_len+1));
+
+  eq_table->forward_classes[0] = eq_table->forward_classes[1];
+  fprintf(stderr, "Expect eq_class warning:\n");
+  ret = EquivClassTable_verify(str, str_len, eq_table, substr_len);
+  mu_assert(ret == 1, "equivalence class marked incorrect classes as correct.");
+  memcpy(eq_table->forward_classes, good_forward, sizeof(EquivClassIndex_T)*(str_len+1));
+
   eq_table->reverse_classes[2] = 1;
   fprintf(stderr, "Expect eq_class warning:\n");
   ret = EquivClassTable_verify(str, str_len, eq_table, substr_len);
   mu_assert(ret == 1, "equivalence class marked incorrect classes as correct.");
-  
+  memcpy(eq_table->reverse_classes, good_reverse, sizeof(EquivClassIndex_T)*(str_len+1));
+
+  eq_table->reverse_classes[4] = eq_table->reverse_classes[5];
+  fprintf(stderr, "Expect eq_class warning:\n");
+  ret = EquivClassTable_verify(str, str_len, eq_table, substr_len);
+  mu_assert(ret == 1, "equivalence class marked incorrect classes as correct.");
+  memcpy(eq_table->reverse_classes, good_reverse, sizeof(EquivClassIndex_T)*(str_len+1));
+
   EquivClassTable_delete(&eq_table);
   free(good_forward);
   free(good_reverse);
@@ -134,9 +163,9 @@ char* all_tests()
 {
   mu_suite_start();
   
+  mu_run_test(test_eq_class_verification);
   mu_run_test(test_banana);
   mu_run_test(test_random_strings);
-  mu_run_test(test_eq_class_verification);
 
   return NULL;
 }
