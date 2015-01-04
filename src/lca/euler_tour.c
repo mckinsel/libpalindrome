@@ -104,7 +104,7 @@ int EulerTour_verify(EulerTour_T euler_tour, SuffixTree_T tree)
   for(i = 0; i < euler_tour->length - 1; i++) {
     long int diff = euler_tour->depths[i] - euler_tour->depths[i + 1];
     
-    if(!labs(diff) == 1) {
+    if(!(labs(diff) == 1)) {
       log_warn("Consecutive values in depth array do not differ by 1.");
       return 1;
     }
