@@ -749,7 +749,7 @@ int SuffixTree_verify(SuffixTree_T tree)
       }
    }
    /* If we are here no search has failed and the test passed successfuly */
-   printf("Suffix tree SelfTest Result: Success.\n");
+   /* printf("Suffix tree SelfTest Result: Success.\n"); */
    return 0;
 }
 
