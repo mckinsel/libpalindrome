@@ -56,25 +56,38 @@ struct LCASuffixTree_T {
 
 LCASuffixTree_T LCASuffixTree_create(char* str, size_t length)
 {
+  LCASuffixTree_T lca_suffix_tree = NULL;
+  LCASuffixTree_T tmp_lca_suffix_tree = NULL;
+
   /* First initialize as a SuffixTree_T. */
-  LCASuffixTree_T lca_suffix_tree = (LCASuffixTree_T)SuffixTree_create(str, length);
+  lca_suffix_tree = (LCASuffixTree_T)SuffixTree_create(str, length);
   check_mem(lca_suffix_tree);
   
   /* Then realloc for the additional LCASuffixTree_T fields. */
-  LCASuffixTree_T tmp_lca_suffix_tree = realloc(lca_suffix_tree, sizeof(struct LCASuffixTree_T));
-  check_mem(tmp_lca_suffix_tree);
+  tmp_lca_suffix_tree = realloc(lca_suffix_tree, sizeof(struct LCASuffixTree_T));
+  if(!tmp_lca_suffix_tree) {
+    SuffixTree_T lca_as_suffix_tree = (SuffixTree_T)lca_suffix_tree;
+    SuffixTree_delete(&lca_as_suffix_tree);
+    lca_suffix_tree = NULL;
+    check(tmp_lca_suffix_tree, "Failed reallocation for LCA fields.");
+  }
+
   lca_suffix_tree = tmp_lca_suffix_tree;
   tmp_lca_suffix_tree = NULL;
 
+  lca_suffix_tree->euler_tour = NULL;
+  lca_suffix_tree->tour_partition = NULL;
+  lca_suffix_tree->block_sparse_table = NULL;
+  lca_suffix_tree->block_rmq_db = NULL;
 
   /* Create the Euler tour of the suffix tree. */
   lca_suffix_tree->euler_tour = EulerTour_create((SuffixTree_T)lca_suffix_tree);
-  check_mem(lca_suffix_tree->euler_tour);
+  check(lca_suffix_tree->euler_tour, "Euler tour creation failed.");
 
   /* Create the partition of the euler tour node depths. */
   lca_suffix_tree->tour_partition = TourPartition_create(
       lca_suffix_tree->euler_tour->depths, lca_suffix_tree->euler_tour->length);
-  check_mem(lca_suffix_tree->tour_partition);
+  check(lca_suffix_tree->tour_partition, "Tour partition creation failed.");
 
   /*
    * Create the sparse table for finding minima between blocks in the depths
@@ -83,10 +96,13 @@ LCASuffixTree_T LCASuffixTree_create(char* str, size_t length)
   lca_suffix_tree->block_sparse_table = SparseTable_create(
       lca_suffix_tree->tour_partition->block_minima,
       lca_suffix_tree->tour_partition->num_blocks);
+  check(lca_suffix_tree->block_sparse_table, "Sparse table creation failed.");
   
   /* Finally, create the RMQ database for the blocks. */
   lca_suffix_tree->block_rmq_db = BlockRMQDatabase_create(
       lca_suffix_tree->tour_partition->block_length);
+  check(lca_suffix_tree->block_rmq_db,
+        "Block range minimum query database creation failed.");
 
   return lca_suffix_tree;
 
@@ -97,6 +113,8 @@ error:
 
 void LCASuffixTree_delete(LCASuffixTree_T* lca_suffix_tree)
 {
+ if(!lca_suffix_tree) return;
+
  if(*lca_suffix_tree) {
    EulerTour_delete(&(*lca_suffix_tree)->euler_tour);
    TourPartition_delete(&(*lca_suffix_tree)->tour_partition);
@@ -136,14 +154,20 @@ Node_T LCASuffixTree_get_lca(LCASuffixTree_T lca_suffix_tree, Node_T node1, Node
   /* Then get the blocks themselves. Note that these are block in the node
    * depths, not the node ids. block_size_[12] give the true size of each
    * block, which may be different if it's the last block. */
-  size_t* block_1 = calloc(lca_suffix_tree->tour_partition->block_length,
-                           sizeof(size_t));
+  size_t* block_1 = NULL, *block_2 = NULL;
+
+  block_1 = calloc(lca_suffix_tree->tour_partition->block_length,
+                   sizeof(size_t));
+  check_mem(block_1);
+
   size_t block_size_1 = TourPartition_get_block(
       &block_1, lca_suffix_tree->tour_partition, block_index_1,
       lca_suffix_tree->euler_tour->depths); 
 
-  size_t* block_2 = calloc(lca_suffix_tree->tour_partition->block_length,
-                           sizeof(size_t));
+  block_2 = calloc(lca_suffix_tree->tour_partition->block_length,
+                   sizeof(size_t));
+  check_mem(block_2);
+
   size_t block_size_2 = TourPartition_get_block(
       &block_2, lca_suffix_tree->tour_partition, block_index_2,
       lca_suffix_tree->euler_tour->depths);
@@ -158,6 +182,8 @@ Node_T LCASuffixTree_get_lca(LCASuffixTree_T lca_suffix_tree, Node_T node1, Node
     size_t min_pos_in_block = BlockRMQDatabase_lookup(
         lca_suffix_tree->block_rmq_db, block_1, block_size_1,
         pos_in_block_1, pos_in_block_2 + 1);
+    check(min_pos_in_block != (size_t)-1, "BlockRMQDatabase lookup failed.");
+
     pos_of_min_depth = block_index_1 * lca_suffix_tree->tour_partition->block_length + min_pos_in_block;
   } else {
     /* Different blocks, so we need to look in each block and then between the
@@ -171,11 +197,14 @@ Node_T LCASuffixTree_get_lca(LCASuffixTree_T lca_suffix_tree, Node_T node1, Node
         block_1, block_size_1,
         pos_in_block_1,
         block_size_1);
+    check(min_pos_in_block_1 != (size_t)-1, "BlockRMQDatabase lookup failed.");
+
     size_t min_pos_in_block_2 = BlockRMQDatabase_lookup(
         lca_suffix_tree->block_rmq_db,
         block_2, block_size_2,
         0,
         pos_in_block_2 + 1);
+    check(min_pos_in_block_2 != (size_t)-1, "BlockRMQDatabase lookup failed.");
 
     /* Get the depths at each of these positions. */ 
     size_t min_depth_in_block_1 = block_1[min_pos_in_block_1];
@@ -218,6 +247,11 @@ Node_T LCASuffixTree_get_lca(LCASuffixTree_T lca_suffix_tree, Node_T node1, Node
   free(block_1);
   free(block_2);
   return lca_suffix_tree->euler_tour->nodes[pos_of_min_depth];
+
+error:
+  if(block_1) free(block_1);
+  if(block_2) free(block_2);
+  return NULL;
 }
 
 /*
@@ -235,12 +269,18 @@ int LCASuffixTree_verify(LCASuffixTree_T lca_suffix_tree)
 {
   /* First check that it's a correct SuffixTree_T. */
   int st_ret_val = SuffixTree_verify((SuffixTree_T)lca_suffix_tree);
+
+  Node_T* node_array = NULL;
+  Node_T* node1_to_root = NULL;
+  Node_T* tmp_node1_to_root = NULL;
+
   if(st_ret_val != 0) {
     log_warn("lca_suffix_tree failed SuffixTree_verify.");
     return 1;
   }
 
-  Node_T* node_array = SuffixTree_create_node_array((SuffixTree_T)lca_suffix_tree);
+  node_array = SuffixTree_create_node_array((SuffixTree_T)lca_suffix_tree);
+  check_mem(node_array);
   
   /* Iterate over all possible node pairs. */
   size_t i = 0;
@@ -248,15 +288,20 @@ int LCASuffixTree_verify(LCASuffixTree_T lca_suffix_tree)
   SuffixTreeIndex_T num_nodes = SuffixTree_get_num_nodes((SuffixTree_T)lca_suffix_tree);
   for(i = 0; i < num_nodes; i++) {
     for(j = 0; j < num_nodes; j++) {
+      node1_to_root = NULL;
       Node_T node1 = node_array[i];
       Node_T node2 = node_array[j];
       
       /* First get the LCA node using the constant time algorithm. */
       Node_T obs_node = LCASuffixTree_get_lca(lca_suffix_tree, node1, node2);
+      check(obs_node, "LCA retrieval failed.");
+
       Node_T exp_node = NULL;
 
       /* Then get the LCA node by tracing from each node back to the root. */
-      Node_T* node1_to_root = calloc(20, sizeof(Node_T));
+      node1_to_root = calloc(20, sizeof(Node_T));
+      check_mem(node1_to_root);
+
       size_t node1_to_root_size = 20;
       size_t node1_to_root_i = 0;
 
@@ -265,8 +310,12 @@ int LCASuffixTree_verify(LCASuffixTree_T lca_suffix_tree)
         node1_to_root[node1_to_root_i] = next_node;
         node1_to_root_i++;
         if(node1_to_root_i == node1_to_root_size) {
-          node1_to_root = realloc(node1_to_root,
-                                  (20 + node1_to_root_size) * sizeof(Node_T));
+          tmp_node1_to_root = realloc(node1_to_root,
+                                      (20 + node1_to_root_size) * sizeof(Node_T));
+          check_mem(tmp_node1_to_root);
+
+          node1_to_root = tmp_node1_to_root;
+          tmp_node1_to_root = NULL;
           node1_to_root_size += 20;
         }
         next_node = Node_get_parent(next_node);
@@ -287,6 +336,7 @@ int LCASuffixTree_verify(LCASuffixTree_T lca_suffix_tree)
       if(obs_node != exp_node) {
         log_warn("Got incorrect LCA. Should get node %zu but got node %zu.",
                  Node_get_index(exp_node), Node_get_index(obs_node));
+        free(node_array);
         free(node1_to_root);
         return 1;
       }
@@ -295,5 +345,11 @@ int LCASuffixTree_verify(LCASuffixTree_T lca_suffix_tree)
   }
   free(node_array);
   return 0;
+
+error:
+  if(node_array) free(node_array);
+  if(node1_to_root) free(node1_to_root);
+  if(tmp_node1_to_root) free(tmp_node1_to_root);
+  return 1;
 }
 
