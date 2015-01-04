@@ -36,18 +36,31 @@ SuffixTreeIndex_T euler_tour_node_func(SuffixTree_T tree,
 
 EulerTour_T EulerTour_create(SuffixTree_T tree)
 {
-  EulerTour_T euler_tour = malloc(sizeof(struct EulerTour_T));
+  struct EulerTourWalkData* euler_data = NULL;
+  size_t* pos_in_tour = NULL;
+  EulerTour_T euler_tour = NULL;
+
+  euler_tour = calloc(1, sizeof(struct EulerTour_T));
+  check_mem(euler_tour);
+
   euler_tour->num_nodes = SuffixTree_get_num_nodes(tree);
   euler_tour->length = 2 * SuffixTree_get_num_nodes(tree) - 1;
 
   euler_tour->nodes = calloc(euler_tour->length, sizeof(Node_T));
+  check_mem(euler_tour->nodes);
+
   euler_tour->depths = calloc(euler_tour->length, sizeof(SuffixTreeIndex_T));
+  check_mem(euler_tour->depths);
+
   euler_tour->first_instances = calloc(SuffixTree_get_num_nodes(tree),
                                        sizeof(SuffixTreeIndex_T));
+  check_mem(euler_tour->first_instances);
   
-  size_t* pos_in_tour = calloc(1, sizeof(size_t));
+  pos_in_tour = calloc(1, sizeof(size_t));
 
-  struct EulerTourWalkData* euler_data = malloc(sizeof(struct EulerTourWalkData));
+  euler_data = malloc(sizeof(struct EulerTourWalkData));
+  check_mem(euler_data);
+
   euler_data->nodes = euler_tour->nodes;
   euler_data->depths = euler_tour->depths;
   euler_data->first_instances = euler_tour->first_instances;
@@ -61,10 +74,18 @@ EulerTour_T EulerTour_create(SuffixTree_T tree)
   free(pos_in_tour);
 
   return euler_tour;
+
+error:
+  if(pos_in_tour) free(pos_in_tour);
+  if(euler_data) free(euler_data);
+  EulerTour_delete(&euler_tour);
+  return NULL;
 }
 
 void EulerTour_delete(EulerTour_T* euler_tour)
 {
+  if(!euler_tour) return;
+
   if(*euler_tour) {
     if((*euler_tour)->nodes) free((*euler_tour)->nodes);
     if((*euler_tour)->depths) free((*euler_tour)->depths);
