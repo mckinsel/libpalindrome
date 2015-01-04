@@ -130,6 +130,7 @@ char* test_boundaries()
   size_t* arr1 = NULL;
   size_t arr_size = 0;
 
+  fprintf(stderr, "Expect tour partition error:\n");
   TourPartition_T tour_partition = TourPartition_create(arr1, arr_size);
   mu_assert(tour_partition == NULL, "TourPartition tried to create an empty partition.");
 
@@ -155,19 +156,22 @@ char* test_verification()
   TourPartition_T tour_partition = TourPartition_create(arr, arr_size);
 
   size_t good_total_length = tour_partition->total_length;
-  tour_partition->total_length = 3;
+  tour_partition->total_length = 20;
 
+  fprintf(stderr, "Expect tour partition error:\n");
   int ret_val = TourPartition_verify(tour_partition, arr, arr_size);
   mu_assert(ret_val != 0,
             "TourPartition verification succeeded on partition with incorrect total_length.");
   tour_partition->total_length = good_total_length;
 
   tour_partition->block_minima[0] = 99;
+  fprintf(stderr, "Expect tour partition error:\n");
   ret_val = TourPartition_verify(tour_partition, arr, arr_size);
   mu_assert(ret_val != 0,
             "TourPartition verification succeeded on partition with incorrect block_minima.");
   tour_partition->block_minima[0] = 4;
 
+  TourPartition_delete(&tour_partition);
   return NULL;
 }
 
