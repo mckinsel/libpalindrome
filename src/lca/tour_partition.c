@@ -51,6 +51,7 @@ TourPartition_T TourPartition_create(const size_t* values, size_t values_length)
   }
 
   TourPartition_T tour_partition = calloc(1, sizeof(struct TourPartition_T));
+  check_mem(tour_partition);
   tour_partition->num_blocks = get_num_blocks(values_length);
   tour_partition->block_length = get_block_size(values_length);
   tour_partition->total_length = values_length;
@@ -98,6 +99,7 @@ TourPartition_T TourPartition_create(const size_t* values, size_t values_length)
   return tour_partition;
 
 error:
+  TourPartition_delete(&tour_partition);
   return NULL;
 }
 
