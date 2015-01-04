@@ -105,13 +105,19 @@ char* test_substr_class_verification()
   ret = verify_substr_classes(str, str_len, 3, bad_classes);
   mu_assert(ret == 1, "Verification marked incorrect substring classes as correct.");
 
-  memcpy(bad_classes, substr_classes, str_len);
+  memcpy(bad_classes, substr_classes, str_len*sizeof(size_t));
   bad_classes[5] = 2;
   fprintf(stderr, "Expect substr_class warning:\n");
   ret = verify_substr_classes(str, str_len, 3, bad_classes);
   mu_assert(ret == 1, "Verification marked incorrect substring classes as correct.");
 
-  memcpy(bad_classes, substr_classes, str_len);
+  memcpy(bad_classes, substr_classes, str_len*sizeof(size_t));
+  bad_classes[0] = 0;
+  fprintf(stderr, "Expect substr_class warning:\n");
+  ret = verify_substr_classes(str, str_len, 3, bad_classes);
+  mu_assert(ret == 1, "Verification marked incorrect substring classes as correct.");
+
+  memcpy(bad_classes, substr_classes, str_len*sizeof(size_t));
   bad_classes[0] = bad_classes[2];
   fprintf(stderr, "Expect substr_class warning:\n");
   ret = verify_substr_classes(str, str_len, 3, bad_classes);
