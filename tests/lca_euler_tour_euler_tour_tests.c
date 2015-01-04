@@ -119,6 +119,8 @@ char* test_verification()
   euler_tour->first_instances[0] = euler_tour->first_instances[1];
   euler_tour->first_instances[1] = tmp_first_instance;
 
+  EulerTour_delete(&euler_tour);
+  SuffixTree_delete(&tree);
   return NULL;
 }
 
