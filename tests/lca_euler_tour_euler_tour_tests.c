@@ -83,6 +83,45 @@ char* test_random()
   return NULL;
 }
 
+char* test_verification()
+{
+  char str[] = "MISSISSIPPI";
+  size_t str_len = sizeof(str) - 1;
+
+  SuffixTree_T tree = SuffixTree_create(str, str_len);
+  EulerTour_T euler_tour = EulerTour_create(tree);
+
+  SuffixTreeIndex_T* good_depths = calloc(euler_tour->length,
+                                          sizeof(SuffixTreeIndex_T));
+  memcpy(good_depths, euler_tour->depths, euler_tour->length*sizeof(SuffixTreeIndex_T));
+  euler_tour->depths[2] = euler_tour->depths[1] + 2;
+  int ret_val = EulerTour_verify(euler_tour, tree);
+  mu_assert(ret_val != 0, "Euler tour verification succeeded for incorrect depths.");
+  memcpy(euler_tour->depths, good_depths, euler_tour->length*sizeof(SuffixTreeIndex_T));
+  free(good_depths);
+
+  Node_T tmp_root = euler_tour->nodes[0];
+  euler_tour->nodes[0] = euler_tour->nodes[1];
+  ret_val = EulerTour_verify(euler_tour, tree);
+  mu_assert(ret_val != 0, "Euler tour verification succeeded for incorrect first node.");
+  euler_tour->nodes[0] = tmp_root;
+
+  euler_tour->nodes[euler_tour->length - 1] = euler_tour->nodes[1];
+  ret_val = EulerTour_verify(euler_tour, tree);
+  mu_assert(ret_val != 0, "Euler tour verification succeeded for incorrect last node.");
+  euler_tour->nodes[euler_tour->length - 1] = tmp_root;
+
+  size_t tmp_first_instance = euler_tour->first_instances[1];
+  euler_tour->first_instances[1] = euler_tour->first_instances[0];
+  euler_tour->first_instances[0] = tmp_first_instance;
+  ret_val = EulerTour_verify(euler_tour, tree);
+  mu_assert(ret_val != 0, "Euler tour verification succeeded for incorrect first instances.");
+  euler_tour->first_instances[0] = euler_tour->first_instances[1];
+  euler_tour->first_instances[1] = tmp_first_instance;
+
+  return NULL;
+}
+
 char* all_tests()
 {
   mu_suite_start();
@@ -90,6 +129,7 @@ char* all_tests()
   mu_run_test(test_abcde);
   mu_run_test(test_banana);
   mu_run_test(test_random);
+  mu_run_test(test_verification);
 
   return NULL;
 }
