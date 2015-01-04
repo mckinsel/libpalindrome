@@ -84,10 +84,14 @@ size_t* annotate_substr_classes(size_t str_length, size_t substr_length,
                                 const SuffixTree_T stree)
 {
   struct SubstrClassDFS* dfs_data = calloc(1, sizeof(struct SubstrClassDFS));
+  check_mem(dfs_data);
+
   dfs_data->substr_length = substr_length;
   dfs_data->class_label = calloc(1, sizeof(size_t));
   check_mem(dfs_data->class_label);
+
   dfs_data->substr_classes = calloc(1, str_length * sizeof(size_t));
+  check_mem(dfs_data->substr_classes);
    
   SuffixTree_walk(stree, SuffixTree_get_root(stree), annotate_substr_node_func,
                   dfs_data, 0);
@@ -99,9 +103,11 @@ size_t* annotate_substr_classes(size_t str_length, size_t substr_length,
   return substr_classes;
 
 error:
-  if(dfs_data->substr_classes) free(dfs_data->substr_classes);
-  if(dfs_data->class_label) free(dfs_data->class_label);
-  if(dfs_data) free(dfs_data);
+  if(dfs_data) {
+    if(dfs_data->substr_classes) free(dfs_data->substr_classes);
+    if(dfs_data->class_label) free(dfs_data->class_label);
+    free(dfs_data);
+  }
   return NULL;
 }
 
@@ -211,19 +217,26 @@ struct Table_T {
 Table_T EquivClassTable_create(AugmentedString_T augmented_string,
                                Index_T substr_length)
 {
-  Table_T table = calloc(1, sizeof(struct Table_T));
+  Table_T table = NULL;
+  size_t* substr_classes = NULL;
+
+  table = calloc(1, sizeof(struct Table_T));
   check_mem(table);
   size_t query_length = AugmentedString_get_query_length(augmented_string);
   table->query_length = query_length;
 
-  size_t* substr_classes = annotate_substr_classes(
+  substr_classes = annotate_substr_classes(
       AugmentedString_get_augmented_length(augmented_string),
       substr_length,
       (SuffixTree_T)AugmentedString_get_tree(augmented_string));
+  check(substr_classes, "Failed annotation of substring equivalence classes.");
 
 
   table->forward_classes = calloc(query_length + 1, sizeof(Index_T));
+  check_mem(table->forward_classes);
+
   table->reverse_classes = calloc(query_length + 1, sizeof(Index_T));
+  check_mem(table->reverse_classes);
 
   memcpy(table->forward_classes, substr_classes,
          sizeof(Index_T)*(query_length - substr_length + 1));
@@ -238,6 +251,12 @@ Table_T EquivClassTable_create(AugmentedString_T augmented_string,
   return table;
 
 error:
+  if(substr_classes) free(substr_classes);
+  if(table) {
+    if(table->forward_classes) free(table->forward_classes);
+    if(table->reverse_classes) free(table->reverse_classes);
+    free(table);
+  }
   return NULL;
 }
 
