@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "dbg.h"
+#include "utils/dbg.h"
 
 #define MIN(A, B) ((A) < (B) ? A : B)
 #define MAX(A, B) ((A) > (B) ? A : B)

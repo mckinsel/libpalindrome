@@ -1,7 +1,8 @@
 #include <stdlib.h>
 
-#include "dbg.h"
-#include "lca/normalized_blocks_private.h"
+#include "normalized_blocks_private.h"
+
+#include "utils/dbg.h"
 
 #define MAX(a,b) ((a) > (b) ? a : b)
 #define MIN(a,b) ((a) < (b) ? a : b)

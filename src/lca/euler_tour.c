@@ -1,8 +1,9 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "dbg.h"
 #include "euler_tour.h"
+
+#include "utils/dbg.h"
 
 /* A little helper struct for the Euler walk through the suffix tree. */
 struct EulerTourWalkData {

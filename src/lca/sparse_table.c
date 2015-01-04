@@ -2,8 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "dbg.h"
 #include "sparse_table.h"
+
+#include "utils/dbg.h"
 
 #define MAX(a,b) ((a) > (b) ? a : b)
 #define MIN(a,b) ((a) < (b) ? a : b)

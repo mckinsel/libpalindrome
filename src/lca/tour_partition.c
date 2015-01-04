@@ -1,6 +1,6 @@
 #include "tour_partition.h"
 
-#include "dbg.h"
+#include "utils/dbg.h"
 
 #include <math.h>
 

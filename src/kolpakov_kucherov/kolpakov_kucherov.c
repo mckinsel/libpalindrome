@@ -6,7 +6,7 @@
 #include "kolpakov_kucherov/equivalence_class_array.h"
 #include "suffix_tree/suffix_tree.h"
 
-#include "dbg.h"
+#include "utils/dbg.h"
 
 void length_constrained_palindromes(char* query_string, size_t query_length,
                                     size_t min_arm_length, size_t min_gap_length,

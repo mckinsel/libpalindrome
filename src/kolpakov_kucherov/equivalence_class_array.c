@@ -1,7 +1,9 @@
 #include "equivalence_class_array.h"
+
+#include "utils/dbg.h"
+
 #include <stdio.h>
 
-#include "dbg.h"
 
 #define Item_T  EquivClassItem_T
 #define List_T  EquivClassList_T

@@ -24,7 +24,7 @@
 
 #include "suffix_tree/suffix_tree_protected.h"
 
-#include "dbg.h"
+#include "utils/dbg.h"
 
 #include <math.h>
 #include <stdlib.h>

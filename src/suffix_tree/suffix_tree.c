@@ -18,7 +18,7 @@ under the same terms as Perl itself.
 *******************************************************************************/
 #include "suffix_tree.h"
 
-#include "dbg.h"
+#include "utils/dbg.h"
 
 
 struct Node_T

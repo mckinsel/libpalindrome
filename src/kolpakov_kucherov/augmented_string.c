@@ -1,6 +1,6 @@
 #include "augmented_string.h"
 
-#include "dbg.h"
+#include "utils/dbg.h"
 #include "lca/lca_suffix_tree.h"
 
 #define QPR_LENGTH(A) (2*(A)+2)

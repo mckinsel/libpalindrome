@@ -1,5 +1,5 @@
 #include "equivalence_class.h"
-#include "dbg.h"
+#include "utils/dbg.h"
 #include "augmented_string.h"
 
 #define Index_T EquivClassIndex_T
