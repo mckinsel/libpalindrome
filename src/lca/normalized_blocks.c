@@ -36,13 +36,15 @@ struct BlockRMQDatabase_T {
  */
 BlockRMQTable_T BlockRMQTable_create(const size_t* block, size_t block_size)
 {
-  BlockRMQTable_T block_rmq_table = malloc(sizeof(struct BlockRMQTable_T));
+  BlockRMQTable_T block_rmq_table = calloc(1, sizeof(struct BlockRMQTable_T));
   check_mem(block_rmq_table);
+
   block_rmq_table->block_size = block_size;
   
   /* Allocate the lookup table */
   block_rmq_table->table = calloc(block_size, sizeof(size_t*));
   check_mem(block_rmq_table->table);
+
   size_t i = 0;
   for(i = 0; i < block_size; i++) {
     block_rmq_table->table[i] = calloc(block_size - i, sizeof(size_t));
@@ -297,6 +299,7 @@ size_t BlockRMQDatabase_lookup(BlockRMQDatabase_T block_rmq_db, const size_t* bl
 
     block_rmq_db->block_tables[block_id] = BlockRMQTable_create(block, block_size);
     check(block_rmq_db->block_tables[block_id], "Block table creation failed.");
+
     block_rmq_db->is_initialized[block_id] = 1;
   }
   
