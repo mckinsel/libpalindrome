@@ -392,7 +392,7 @@ Index_T EquivClassTable_num_classes(Table_T table)
       max_value = table->reverse_classes[i];
     }
   }
-  return max_value;
+  return max_value + 1;
 }
 
 
