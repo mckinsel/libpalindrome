@@ -22,16 +22,18 @@ void length_constrained_palindromes(char* query_string, size_t query_length,
 
   EquivClassArray_T eq_array = EquivClassArray_create(num_classes); 
 
+  EquivClassArray_T tmp_eq_array;
   size_t j = 0;
   for(j = 0; j < query_length; j++) {
 
-    //size_t left_class = reverse_table[j];
     EquivClassIndex_T left_class = EquivClassTable_reverse_lookup(eq_table, j);
 
     /* We can continue if we're not past min_arm_length yet. */
     if(left_class == 0) continue;
     
-    eq_array = EquivClassArray_add(eq_array, left_class, j, query_string);
+    tmp_eq_array = EquivClassArray_add(eq_array, left_class, j, query_string);
+    check(tmp_eq_array, "Failed addition off position to equivalence class array.");
+    eq_array = tmp_eq_array;
 
     //size_t right_class = forward_table[j];
     EquivClassIndex_T right_class = EquivClassTable_forward_lookup(eq_table, j);
@@ -75,6 +77,8 @@ void length_constrained_palindromes(char* query_string, size_t query_length,
   EquivClassTable_delete(&eq_table);
   AugmentedString_delete(&aug_string);
 
+error:
+  return;
 }
 
 
