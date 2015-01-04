@@ -8,12 +8,13 @@ USE_FAILING_ALLOCS
 
 char* test_lca_suffix_tree_allocs()
 {
+  fprintf(stderr, "\n\nBEGIN LCASuffixTree_T ALLOC TESTS\n");
   char str[] = "BANANA";
   size_t str_len = sizeof(str) - 1;
   LCASuffixTree_T tree = NULL; 
   int i = 0;
   int ret_val = 1;
-  for(i = 0; i < 100; i++){
+  for(i = 0; i < 250; i++){
     tree = LCASuffixTree_create(str, str_len);
     if(tree) {
       ret_val = LCASuffixTree_verify(tree);
@@ -22,6 +23,8 @@ char* test_lca_suffix_tree_allocs()
   }
   
   mu_assert(ret_val == 0, "Failed final LCASuffixTree verification."); 
+
+  fprintf(stderr, "END LCASuffixTree_T ALLOC TESTS\n\n");
   return NULL;
 }
 

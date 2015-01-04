@@ -7,7 +7,7 @@ USE_FAILING_ALLOCS
 
 char* test_suffix_tree_allocs()
 {
-  fprintf(stderr, "\nBEGIN SuffixTree_T ALLOC TESTS\n");
+  fprintf(stderr, "\n\nBEGIN SuffixTree_T ALLOC TESTS\n");
   char str[] = "BANANA";
   size_t str_len = sizeof(str) - 1;
 
@@ -35,7 +35,7 @@ char* test_suffix_tree_allocs()
     SuffixTree_delete(&tree);
   }
 
-  fprintf(stderr, "\nEND SuffixTree_T ALLOC TESTS\n");
+  fprintf(stderr, "END SuffixTree_T ALLOC TESTS\n\n");
   return NULL;
 }
 

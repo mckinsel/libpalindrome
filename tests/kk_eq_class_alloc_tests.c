@@ -7,6 +7,7 @@ USE_FAILING_ALLOCS
 
 char* test_eq_table_allocs()
 {
+  fprintf(stderr, "\n\nBEGIN EquivClassTable_T ALLOC TESTS\n");
   char str[] = "BANANA";
   size_t  str_len = sizeof(str) - 1;
   size_t substr_len = 3;
@@ -15,7 +16,7 @@ char* test_eq_table_allocs()
   EquivClassTable_T eq_table = NULL;
   int i = 0;
 
-  for(i = 0; i < 25; i++) {
+  for(i = 0; i < 150; i++) {
 
     aug_string = NULL;
     eq_table = NULL;
@@ -34,6 +35,7 @@ char* test_eq_table_allocs()
     AugmentedString_delete(&aug_string);
   }
 
+  fprintf(stderr, "END EquivClassTable_T ALLOC TESTS\n\n");
   return NULL;
 }
 
