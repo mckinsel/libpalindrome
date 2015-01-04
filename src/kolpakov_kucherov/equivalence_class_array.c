@@ -140,7 +140,8 @@ error:
   return;
 }
 
-/* Add an item to the EquivClassArray. This handles both the
+/*
+ * Add an item to the EquivClassArray. This handles both the
  * linked list aspects of adding the item as well as setting
  * next_runs
  */
@@ -150,7 +151,7 @@ Array_T EquivClassArray_add(Array_T array, size_t equiv_class_index, size_t posi
   check(array, "Attempting to add item to NULL EquivClassArray_T.");
   check(query_string,
         "Attempting to add item to an EquivClassArray_T with a NULL query_string.");
-  check(equiv_class_index < array->num_equiv_classes,
+  check(equiv_class_index <= array->num_equiv_classes,
         "equiv_class_index %zu is greater than number of equiv classes in the array %zu.",
         equiv_class_index, array->num_equiv_classes);
   
@@ -168,7 +169,7 @@ Array_T EquivClassArray_add(Array_T array, size_t equiv_class_index, size_t posi
  return array; 
 
 error:
-  return array;
+  return NULL;
 }
 
 
